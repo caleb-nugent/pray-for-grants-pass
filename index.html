@@ -792,6 +792,27 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
 
+    /* spinner */
+    .ob-spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--gray-300);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* loading overlay */
+    #app-loading {
+      position: fixed; inset: 0;
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
+      transition: opacity 0.3s;
+    }
+    #app-loading.fade { opacity: 0; pointer-events: none; }
+
     /* ══════════════════════════════════════════
        ONBOARDING OVERLAY
     ══════════════════════════════════════════ */
@@ -1152,19 +1173,18 @@
         <button class="page-tab" id="pt-mine" onclick="setPage('mine')">My Slots</button>
         <button class="page-tab" id="pt-admin" onclick="setPage('admin')">Admin</button>
       </div>
-      <button class="user-btn" onclick="promptName()">
+      <button class="user-btn" id="user-btn" onclick="toggleUserMenu()">
         <div class="user-avatar" id="user-avatar">?</div>
-        <span id="user-label">Set name</span>
+        <span id="user-label">Sign in</span>
       </button>
     </div>
   </div>
 
-  <!-- NAME BANNER -->
-  <div class="name-banner" id="name-banner" style="display:none">
-    <span>Enter your name to sign up for prayer slots</span>
-    <div class="name-banner-form">
-      <input type="text" id="name-input" placeholder="Your name" />
-      <button onclick="saveName()">Save</button>
+  <!-- APP LOADING -->
+  <div id="app-loading">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="width:28px;height:28px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:13px">✦</div>
+      <div class="ob-spinner" style="width:20px;height:20px"></div>
     </div>
   </div>
 
@@ -1196,83 +1216,318 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+// ══════════════════════════════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════════════════════════════
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword,
+         signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { getFirestore, collection, addDoc, deleteDoc, getDocs,
+         query, where, onSnapshot, doc, setDoc, getDoc,
+         writeBatch, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            'AIzaSyDSRSo-Rnvex5e1XnvzaL3gTp-OxP_ZrN4',
+  authDomain:        'pray-for-gp.firebaseapp.com',
+  projectId:         'pray-for-gp',
+  storageBucket:     'pray-for-gp.firebasestorage.app',
+  messagingSenderId: '264571030758',
+  appId:             '1:264571030758:web:c4cb9c99e9e9e602973f27',
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+
+// ══════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════════════
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS     = ['January','February','March','April','May','June','July',
+                    'August','September','October','November','December'];
+
+const ALL_SLOTS = (() => {
+  const s = [];
+  for (let h = 5; h < 23; h++)
+    for (let m = 0; m < 60; m += 15)
+      s.push({ hour: h, min: m });
+  return s;
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════
+const S = {
+  view: 'month', page: 'calendar',
+  cursor: new Date(), selected: new Date(),
+  userName: '', currentUser: null,
+  slots: [],           // populated by Firestore listener
+  adminUnlocked: false,
+  showAllDetail: false,
+  initialized: false,
+};
+
+let unsubSlots = null;
+
+// ══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════
+const pad     = n  => String(n).padStart(2,'0');
+const same    = (a,b) => a.getFullYear()===b.getFullYear()
+                      && a.getMonth()===b.getMonth()
+                      && a.getDate()===b.getDate();
+const isToday = d  => same(d, new Date());
+
+function slotKey(date, h, m) {
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}-${pad(h)}-${pad(m)}`;
+}
+function parseKey(k) {
+  const [y,mo,d,h,mi] = k.split('-').map(Number);
+  return { year:y, month:mo-1, day:d, hour:h, min:mi };
+}
+function fmtTime(h, m) {
+  return `${h%12||12}:${pad(m)} ${h>=12?'PM':'AM'}`;
+}
+function fmtDate(d) {
+  return `${DAYS_FULL[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+function signupsFor(key)  { return S.slots.filter(s => s.slotKey === key); }
+function myKeys() {
+  if (!S.currentUser) return [];
+  return S.slots.filter(s => s.userId === S.currentUser.uid).map(s => s.slotKey);
+}
+function weekDays(cursor) {
+  const dow = cursor.getDay();
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(cursor); d.setDate(cursor.getDate() - dow + i); return d;
+  });
+}
+function ordinal(n) {
+  const s = ['th','st','nd','rd'], v = n%100;
+  return s[(v-20)%10] || s[v] || s[0];
+}
+function hideLoading() {
+  const el = document.getElementById('app-loading');
+  if (!el) return;
+  el.classList.add('fade');
+  setTimeout(() => el.style.display='none', 320);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// FIRESTORE
+// ══════════════════════════════════════════════════════════════════════
+function setupSlotsListener() {
+  if (unsubSlots) unsubSlots();
+  unsubSlots = onSnapshot(collection(db, 'prayer_slots'), snap => {
+    S.slots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (S.initialized) render();
+  }, err => console.error('Slots listener:', err));
+}
+
+async function addSlotToDb(key) {
+  if (!S.currentUser) return;
+  await addDoc(collection(db, 'prayer_slots'), {
+    userId:    S.currentUser.uid,
+    userName:  S.userName,
+    slotKey:   key,
+    createdAt: serverTimestamp(),
+  });
+}
+
+async function removeSlotFromDb(key) {
+  if (!S.currentUser) return;
+  const q    = query(collection(db, 'prayer_slots'),
+    where('userId',  '==', S.currentUser.uid),
+    where('slotKey', '==', key));
+  const snap = await getDocs(q);
+  const batch = writeBatch(db);
+  snap.forEach(d => batch.delete(doc(db, 'prayer_slots', d.id)));
+  await batch.commit();
+  document.getElementById('backdrop').classList.remove('open');
+}
+
+async function saveProfile(uid, data) {
+  await setDoc(doc(db, 'profiles', uid), data);
+}
+async function loadProfile(uid) {
+  const snap = await getDoc(doc(db, 'profiles', uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+function generateSlotKeys(ob) {
+  const today = new Date();
+  const keys  = [];
+  if (ob.frequency === 'daily') {
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      keys.push(slotKey(d, ob.hour, 0));
+    }
+  } else if (ob.frequency === 'weekly' && ob.days.length > 0) {
+    for (let i = 0; i < 56; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      if (ob.days.includes(d.getDay())) keys.push(slotKey(d, ob.hour, 0));
+    }
+  } else if (ob.frequency === 'monthly' && ob.days.length > 0) {
+    for (let m = 0; m < 4; m++) {
+      ob.days.forEach(dom => {
+        const d = new Date(today.getFullYear(), today.getMonth() + m, dom);
+        if (d >= today && d.getDate() === dom) keys.push(slotKey(d, ob.hour, 0));
+      });
+    }
+  } else if (ob.hour !== null) {
+    keys.push(slotKey(today, ob.hour, 0));
+  }
+  return keys;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// AUTH STATE
+// ══════════════════════════════════════════════════════════════════════
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    S.currentUser = user;
+    const profile = await loadProfile(user.uid);
+    if (profile) S.userName = profile.name || '';
+    setupSlotsListener();
+    // hide onboarding
+    const ov = document.getElementById('ob-overlay');
+    ov.classList.add('ob-exit');
+    setTimeout(() => { ov.style.display = 'none'; }, 480);
+    S.initialized = true;
+    hideLoading();
+    render();
+  } else {
+    S.currentUser = null;
+    S.userName    = '';
+    S.slots       = [];
+    if (unsubSlots) { unsubSlots(); unsubSlots = null; }
+    S.initialized = true;
+    hideLoading();
+    // show onboarding
+    const ov = document.getElementById('ob-overlay');
+    ov.style.display = 'flex';
+    ov.classList.remove('ob-exit');
+    OB.step = 0; OB.mode = 'onboard'; OB.loading = false; OB.error = '';
+    obRender();
+    render();
+  }
+});
+
+async function doSignOut() {
+  closeUserMenu();
+  await signOut(auth);
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // ONBOARDING
 // ══════════════════════════════════════════════════════════════════════
-
 const OB = {
-  step: 0,
-  name: '',
-  email: '',
-  emailConsent: true,
-  frequency: '',   // 'daily' | 'weekly' | 'monthly'
-  days: [],        // [0-6] for weekly, [1-28] for monthly
-  hour: null,
-  transitioning: false,
+  step: 0, mode: 'onboard',
+  name: '', email: '', password: '',
+  emailConsent: true, frequency: '',
+  days: [], hour: null,
+  transitioning: false, error: '', loading: false,
 };
 
-// Steps: name → email → frequency → [day] → time → done
-// 'day' is skipped when frequency === 'daily'
 function obSteps() {
-  const base = ['name','email','frequency','time','done'];
-  if (OB.frequency === 'weekly' || OB.frequency === 'monthly') {
-    return ['name','email','frequency','day','time','done'];
-  }
-  return base;
+  return (OB.frequency === 'weekly' || OB.frequency === 'monthly')
+    ? ['name','email','frequency','day','time','done']
+    : ['name','email','frequency','time','done'];
 }
-function obTotalVisible() { return obSteps().length - 1; } // exclude 'done'
-function obCurrentIdx()   { return OB.step; }
+function obTotalVisible() { return obSteps().length - 1; }
 
 function obRender() {
-  const steps   = obSteps();
-  const stepId  = steps[OB.step];
-  const total   = obTotalVisible();
+  const steps  = obSteps();
+  const stepId = OB.mode === 'signin' ? 'signin' : steps[OB.step];
+  const total  = obTotalVisible();
 
   // dots
-  const dots = document.getElementById('ob-dots');
-  dots.innerHTML = steps.slice(0,-1).map((_,i) => {
-    const cls = i < OB.step ? 'done' : i === OB.step ? 'active' : '';
-    return `<div class="ob-dot ${cls}"></div>`;
-  }).join('');
+  document.getElementById('ob-dots').innerHTML = OB.mode === 'signin' ? '' :
+    steps.slice(0,-1).map((_,i) => {
+      const cls = i < OB.step ? 'done' : i === OB.step ? 'active' : '';
+      return `<div class="ob-dot ${cls}"></div>`;
+    }).join('');
 
-  // step content
   let html = '';
-  if (stepId === 'name') {
+
+  if (stepId === 'signin') {
+    html = `
+      <div class="ob-eyebrow">Welcome back</div>
+      <div class="ob-q">Sign in to your account</div>
+      <div class="ob-hint">Enter your email and password below.</div>
+      <div class="ob-input-wrap" style="margin-bottom:18px">
+        <input class="ob-input" id="ob-si-email" type="email"
+          placeholder="Email address" value="${OB.email}" autocomplete="email" />
+      </div>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-si-pass" type="password"
+          placeholder="Password" autocomplete="current-password" />
+      </div>
+      ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:10px">${OB.error}</div>` : ''}
+      <div style="margin-top:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button class="ob-continue" onclick="obSignIn()" ${OB.loading?'disabled style="opacity:0.6"':''}>
+          ${OB.loading?'<span class="ob-spinner" style="width:14px;height:14px;border-color:rgba(255,255,255,0.4);border-top-color:white"></span>':''}
+          Sign in <span class="ob-continue-arrow">→</span>
+        </button>
+        <button onclick="OB.mode='onboard';OB.error='';obRender()"
+          style="background:none;border:none;font-size:13px;color:var(--gray-500);cursor:pointer;font-family:inherit">
+          ← New account
+        </button>
+      </div>`;
+  }
+  else if (stepId === 'name') {
     html = `
       <div class="ob-eyebrow">Welcome</div>
       <div class="ob-q">What's your name?</div>
-      <div class="ob-hint">We'll use this to track your prayer slots.</div>
+      <div class="ob-hint">We'll use this to show your prayer slots on the calendar.</div>
       <div class="ob-input-wrap">
         <input class="ob-input" id="ob-name-inp" type="text"
-          placeholder="First name" value="${OB.name}"
-          autocomplete="given-name" />
+          placeholder="First name" value="${OB.name}" autocomplete="given-name" />
       </div>
-      <div>
+      <div style="margin-top:28px">
         <button class="ob-continue" onclick="obNext()">
           Continue <span class="ob-continue-arrow">→</span>
         </button>
         <span class="ob-enter-hint"><kbd>Enter</kbd> to continue</span>
+      </div>
+      <div style="margin-top:24px;font-size:12px;color:var(--gray-500)">
+        Already have an account?
+        <button onclick="OB.mode='signin';OB.error='';obRender()"
+          style="background:none;border:none;color:var(--green);cursor:pointer;
+                 font-family:inherit;font-size:12px;padding:0;text-decoration:underline">
+          Sign in
+        </button>
       </div>`;
   }
   else if (stepId === 'email') {
     html = `
       <div class="ob-eyebrow">Step 2 of ${total}</div>
-      <div class="ob-q">What's your email${OB.name ? `, <em>${OB.name}</em>` : ''}?</div>
-      <div class="ob-hint">Optional — we'll only use this to send prayer reminders.</div>
-      <div class="ob-input-wrap">
+      <div class="ob-q">Create your account${OB.name?`, <em>${OB.name}</em>`:''}.</div>
+      <div class="ob-hint">You'll use this to sign in from any device.</div>
+      <div class="ob-input-wrap" style="margin-bottom:18px">
         <input class="ob-input" id="ob-email-inp" type="email"
-          placeholder="your@email.com" value="${OB.email}"
-          autocomplete="email" />
+          placeholder="Email address" value="${OB.email}" autocomplete="email" />
       </div>
-      <div class="ob-consent" onclick="OB.emailConsent=!OB.emailConsent;obRender()">
-        <button class="ob-toggle ${OB.emailConsent?'on':''}" onclick="event.stopPropagation();OB.emailConsent=!OB.emailConsent;obRender()"></button>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-pass-inp" type="password"
+          placeholder="Create a password (6+ characters)"
+          value="${OB.password}" autocomplete="new-password" />
+      </div>
+      ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:10px">${OB.error}</div>` : ''}
+      <div class="ob-consent" onclick="OB.emailConsent=!OB.emailConsent;obRender()" style="margin-top:20px">
+        <button class="ob-toggle ${OB.emailConsent?'on':''}"
+          onclick="event.stopPropagation();OB.emailConsent=!OB.emailConsent;obRender()"></button>
         <div class="ob-consent-text">
           <strong>Send me prayer reminders</strong>
           Notify me when my prayer time is coming up or when new needs are shared.
         </div>
       </div>
-      <div>
+      <div style="margin-top:24px">
         <button class="ob-continue" onclick="obNext()">
           Continue <span class="ob-continue-arrow">→</span>
         </button>
@@ -1303,39 +1558,32 @@ function obRender() {
   }
   else if (stepId === 'day') {
     if (OB.frequency === 'weekly') {
-      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       html = `
         <div class="ob-eyebrow">Step 4 of ${total}</div>
         <div class="ob-q">Which day of the week?</div>
         <div class="ob-hint">Pick the day you'd like to set aside for prayer.</div>
         <div class="ob-chips">
-          ${dayNames.map((d,i) => `
+          ${DAYS_SHORT.map((d,i) => `
             <button class="ob-chip ${OB.days.includes(i)?'selected':''}"
                     onclick="obToggleDay(${i})">${d}</button>`).join('')}
         </div>
-        <div>
-          <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
-            Continue <span class="ob-continue-arrow">→</span>
-          </button>
-        </div>`;
+        <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
+          Continue <span class="ob-continue-arrow">→</span>
+        </button>`;
     } else {
-      // monthly — pick date 1–28
-      const dates = Array.from({length:28},(_,i)=>i+1);
       html = `
         <div class="ob-eyebrow">Step 4 of ${total}</div>
         <div class="ob-q">Which day of the month?</div>
         <div class="ob-hint">Pick the date you'd like to pray each month.</div>
         <div class="ob-chips" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
-          ${dates.map(d => `
+          ${Array.from({length:28},(_,i)=>i+1).map(d => `
             <button class="ob-chip ${OB.days.includes(d)?'selected':''}"
                     style="padding:9px 0;text-align:center"
                     onclick="obToggleDay(${d})">${d}</button>`).join('')}
         </div>
-        <div>
-          <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
-            Continue <span class="ob-continue-arrow">→</span>
-          </button>
-        </div>`;
+        <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
+          Continue <span class="ob-continue-arrow">→</span>
+        </button>`;
     }
   }
   else if (stepId === 'time') {
@@ -1343,302 +1591,209 @@ function obRender() {
     html = `
       <div class="ob-eyebrow">Step ${total} of ${total}</div>
       <div class="ob-q">When is a good time<br>to spend in prayer?</div>
-      <div class="ob-hint">Pick the hour that works best. You can always sign up for other slots too.</div>
+      <div class="ob-hint">Pick the hour that works best — you can always add more later.</div>
       <div class="ob-time-grid">
         ${hours.map(h => {
-          const label = h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h-12} PM`;
-          const sel   = OB.hour === h;
-          return `<button class="ob-chip ${sel?'selected':''}"
+          const label = h<12 ? `${h} AM` : h===12 ? '12 PM' : `${h-12} PM`;
+          return `<button class="ob-chip ${OB.hour===h?'selected':''}"
                           style="text-align:center;padding:10px 6px"
                           onclick="OB.hour=${h};obRender()">${label}</button>`;
         }).join('')}
       </div>
-      <div>
-        <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
-          ${OB.hour !== null ? "Let's go →" : 'Continue →'}
-        </button>
-        ${OB.hour === null ? `<span class="ob-enter-hint">or pick a time above</span>` : ''}
-      </div>`;
+      <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
+        ${OB.hour!==null ? "Let's go" : 'Continue'} <span class="ob-continue-arrow">→</span>
+      </button>`;
   }
   else if (stepId === 'done') {
-    const freqLabel = {daily:'Every day',weekly:'Every week',monthly:'Every month'}[OB.frequency] || '';
-    const timeLabel = OB.hour !== null ? fmtTime(OB.hour, 0) : '';
+    const freqLabel = {daily:'Every day',weekly:'Every week',monthly:'Every month'}[OB.frequency]||'';
+    const timeLabel = OB.hour!==null ? fmtTime(OB.hour,0) : '';
     let dayLabel = '';
-    if (OB.frequency === 'weekly' && OB.days.length > 0) {
-      dayLabel = OB.days.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ');
-    } else if (OB.frequency === 'monthly' && OB.days.length > 0) {
-      dayLabel = OB.days.map(d=>`${d}${ordinal(d)}`).join(', ') + ' of the month';
-    }
+    if (OB.frequency==='weekly' && OB.days.length>0)
+      dayLabel = OB.days.map(d=>DAYS_SHORT[d]).join(', ');
+    else if (OB.frequency==='monthly' && OB.days.length>0)
+      dayLabel = OB.days.map(d=>`${d}${ordinal(d)}`).join(', ')+' of the month';
+
     html = `
       <div class="ob-done-icon">🙏</div>
-      <div class="ob-q ob-done-q">You're all set${OB.name ? `, <em>${OB.name}</em>` : ''}.</div>
-      <div class="ob-done-sub">Your prayer slots are ready on the calendar. Thank you for committing time to pray for Grants Pass.</div>
+      <div class="ob-q ob-done-q">You're all set${OB.name?`, <em>${OB.name}</em>`:''}.</div>
+      <div class="ob-done-sub">Your prayer slots are being added to the calendar.</div>
       <div class="ob-summary">
-        ${OB.name   ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${OB.name}</div>` : ''}
-        ${freqLabel ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${freqLabel}</div>` : ''}
-        ${dayLabel  ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${dayLabel}</div>` : ''}
-        ${timeLabel ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${timeLabel}</div>` : ''}
+        ${OB.name    ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${OB.name}</div>`:''}
+        ${freqLabel  ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${freqLabel}</div>`:''}
+        ${dayLabel   ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${dayLabel}</div>`:''}
+        ${timeLabel  ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${timeLabel}</div>`:''}
       </div>
-      <button class="ob-continue" onclick="obFinish()">
-        Open my calendar <span class="ob-continue-arrow">→</span>
-      </button>`;
+      ${OB.loading ? `
+        <div style="display:flex;align-items:center;gap:10px;color:var(--gray-500);font-size:13px">
+          <div class="ob-spinner"></div> Setting up your account…
+        </div>` : `
+        <button class="ob-continue" onclick="obFinish()">
+          Open my calendar <span class="ob-continue-arrow">→</span>
+        </button>`}
+      ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:12px">${OB.error}</div>`:''}`;
   }
 
   const wrap = document.getElementById('ob-step');
   wrap.innerHTML = `<div class="ob-step-inner">${html}</div>`;
-
-  // auto-focus inputs
-  setTimeout(() => {
-    const inp = wrap.querySelector('.ob-input');
-    if (inp) inp.focus();
-  }, 60);
+  setTimeout(() => wrap.querySelector('.ob-input')?.focus(), 60);
 }
 
 function obToggleDay(val) {
   const i = OB.days.indexOf(val);
-  if (i === -1) OB.days.push(val);
-  else OB.days.splice(i, 1);
+  if (i===-1) OB.days.push(val); else OB.days.splice(i,1);
   obRender();
 }
 
 function obNext() {
   if (OB.transitioning) return;
-
   const steps  = obSteps();
   const stepId = steps[OB.step];
+  OB.error = '';
 
-  // validation
   if (stepId === 'name') {
     const v = document.getElementById('ob-name-inp')?.value.trim();
     if (!v) { document.getElementById('ob-name-inp').style.borderBottomColor='#c44'; return; }
     OB.name = v;
   }
   if (stepId === 'email') {
-    OB.email = document.getElementById('ob-email-inp')?.value.trim() || '';
+    const e = document.getElementById('ob-email-inp')?.value.trim();
+    const p = document.getElementById('ob-pass-inp')?.value || '';
+    if (!e) { document.getElementById('ob-email-inp').style.borderBottomColor='#c44'; return; }
+    if (p.length < 6) { OB.error='Password must be at least 6 characters.'; obRender(); return; }
+    OB.email = e; OB.password = p;
   }
   if (stepId === 'frequency' && !OB.frequency) return;
-  if (stepId === 'day' && OB.days.length === 0) {
-    // allow continuing without selection
-  }
-  if (stepId === 'time' && OB.hour === null) {
-    // pick a default
-    OB.hour = 7;
-  }
+  if (stepId === 'time' && OB.hour===null) OB.hour = 7;
 
-  // advance
   OB.transitioning = true;
-  const inner = document.querySelector('.ob-step-inner');
-  if (inner) inner.classList.add('ob-exit-step');
-
-  setTimeout(() => {
-    OB.step++;
-    OB.transitioning = false;
-    // recalc steps after frequency change
-    obRender();
-  }, 200);
+  document.querySelector('.ob-step-inner')?.classList.add('ob-exit-step');
+  setTimeout(() => { OB.step++; OB.transitioning=false; obRender(); }, 200);
 }
 
-function obSkip() { obFinish(); }
+async function obFinish() {
+  OB.loading = true; OB.error = ''; obRender();
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, OB.email, OB.password);
+    const uid  = cred.user.uid;
 
-function obFinish() {
-  // persist name
-  if (OB.name) {
-    localStorage.setItem('pfgp_name', OB.name);
-    S.userName = OB.name;
-  }
+    await saveProfile(uid, {
+      name: OB.name, email: OB.email,
+      notificationConsent: OB.emailConsent,
+      frequency: OB.frequency,
+      preferredDays: OB.days, preferredHour: OB.hour,
+      createdAt: serverTimestamp(),
+    });
 
-  // auto-create slots based on preferences
-  if (OB.hour !== null && OB.name) {
-    const today   = new Date();
-    const slots   = [];
-
-    if (OB.frequency === 'daily') {
-      // next 30 days
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(today); d.setDate(today.getDate() + i);
-        slots.push(slotKey(d, OB.hour, 0));
-      }
-    } else if (OB.frequency === 'weekly' && OB.days.length > 0) {
-      // next 8 weeks, on chosen days
-      for (let i = 0; i < 56; i++) {
-        const d = new Date(today); d.setDate(today.getDate() + i);
-        if (OB.days.includes(d.getDay())) slots.push(slotKey(d, OB.hour, 0));
-      }
-    } else if (OB.frequency === 'monthly' && OB.days.length > 0) {
-      // next 4 months, on chosen dates
-      for (let m = 0; m < 4; m++) {
-        OB.days.forEach(dom => {
-          const d = new Date(today.getFullYear(), today.getMonth() + m, dom);
-          if (d >= today && d.getDate() === dom)
-            slots.push(slotKey(d, OB.hour, 0));
+    if (OB.hour !== null) {
+      const keys  = generateSlotKeys(OB);
+      const batch = writeBatch(db);
+      keys.forEach(k => {
+        batch.set(doc(collection(db, 'prayer_slots')), {
+          userId: uid, userName: OB.name,
+          slotKey: k, createdAt: serverTimestamp(),
         });
-      }
-    } else if (OB.hour !== null) {
-      // no frequency chosen — just sign up today
-      slots.push(slotKey(today, OB.hour, 0));
+      });
+      await batch.commit();
     }
-
-    // add without duplicating
-    const existing = new Set(S.slots.filter(s=>s.name===OB.name).map(s=>s.key));
-    slots.forEach(k => { if (!existing.has(k)) S.slots.push({ key: k, name: OB.name }); });
-    saveSlots();
+    // onAuthStateChanged fires and transitions to app
+  } catch (err) {
+    OB.loading = false;
+    if (err.code === 'auth/email-already-in-use') {
+      OB.error = 'That email is already registered. <a href="#" onclick="OB.mode=\'signin\';OB.error=\'\';obRender();return false" style="color:var(--green)">Sign in instead.</a>';
+    } else {
+      OB.error = err.message;
+    }
+    obRender();
   }
-
-  // mark onboarded
-  localStorage.setItem('pfgp_onboarded', '1');
-
-  // fade out overlay
-  const ov = document.getElementById('ob-overlay');
-  ov.classList.add('ob-exit');
-  setTimeout(() => { ov.style.display = 'none'; render(); }, 500);
 }
 
-function ordinal(n) {
-  const s = ['th','st','nd','rd'];
-  const v = n % 100;
-  return s[(v-20)%10]||s[v]||s[0];
-}
-
-// keyboard nav for onboarding
-document.addEventListener('keydown', function obKey(e) {
-  const ov = document.getElementById('ob-overlay');
-  if (!ov || ov.style.display === 'none') return;
-  if (e.key === 'Enter') {
-    const steps  = obSteps();
-    const stepId = steps[OB.step];
-    // don't auto-advance on option/chip screens
-    if (['name','email','time'].includes(stepId)) obNext();
+async function obSignIn() {
+  const email = document.getElementById('ob-si-email')?.value.trim();
+  const pass  = document.getElementById('ob-si-pass')?.value || '';
+  if (!email || !pass) return;
+  OB.loading = true; OB.error = ''; obRender();
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged handles the rest
+  } catch (err) {
+    OB.loading = false;
+    OB.error = (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')
+      ? 'Incorrect email or password.' : err.message;
+    obRender();
   }
-});
-
-// ── CONSTANTS ──────────────────────────────────────────────────────────
-const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const DAYS_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTHS     = ['January','February','March','April','May','June','July',
-                    'August','September','October','November','December'];
-
-// 15-min slots 5am–11pm
-const ALL_SLOTS = (() => {
-  const s = [];
-  for (let h = 5; h < 23; h++)
-    for (let m = 0; m < 60; m += 15)
-      s.push({ hour: h, min: m });
-  return s;
-})();
-
-// ── STATE ──────────────────────────────────────────────────────────────
-const S = {
-  view:      'month',
-  page:      'calendar',
-  cursor:    new Date(),
-  selected:  new Date(),
-  userName:  localStorage.getItem('pfgp_name') || '',
-  slots:     JSON.parse(localStorage.getItem('pfgp_slots') || '[]'),
-  adminUnlocked: false,
-  showAllDetail: false,
-};
-
-// ── HELPERS ────────────────────────────────────────────────────────────
-const pad  = n => String(n).padStart(2,'0');
-const same = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
-const isToday = d => same(d, new Date());
-
-function saveSlots() { localStorage.setItem('pfgp_slots', JSON.stringify(S.slots)); }
-
-function slotKey(date, h, m) {
-  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}-${pad(h)}-${pad(m)}`;
 }
 
-function parseKey(k) {
-  const [y,mo,d,h,mi] = k.split('-').map(Number);
-  return { year:y, month:mo-1, day:d, hour:h, min:mi };
+function obSkip() {
+  document.getElementById('ob-overlay').classList.add('ob-exit');
+  setTimeout(() => { document.getElementById('ob-overlay').style.display='none'; }, 480);
+  S.initialized = true; render();
 }
 
-function fmtTime(h, m) {
-  const ap = h >= 12 ? 'PM' : 'AM';
-  return `${h%12||12}:${pad(m)} ${ap}`;
+// ══════════════════════════════════════════════════════════════════════
+// USER MENU
+// ══════════════════════════════════════════════════════════════════════
+function toggleUserMenu() {
+  if (document.getElementById('user-menu')) { closeUserMenu(); return; }
+  if (!S.currentUser) {
+    OB.mode='signin'; OB.error='';
+    const ov = document.getElementById('ob-overlay');
+    ov.style.display='flex'; ov.classList.remove('ob-exit');
+    obRender(); return;
+  }
+  const btn  = document.getElementById('user-btn');
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.id = 'user-menu';
+  menu.style.cssText = `position:fixed;top:${rect.bottom+6}px;right:${window.innerWidth-rect.right}px;
+    background:white;border:1px solid var(--gray-300);border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.1);padding:8px;min-width:190px;z-index:500;`;
+  menu.innerHTML = `
+    <div style="padding:8px 12px 10px;border-bottom:1px solid var(--gray-300);margin-bottom:4px">
+      <div style="font-size:13px;font-weight:600">${S.userName}</div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:2px">${S.currentUser.email}</div>
+    </div>
+    <button onclick="doSignOut()"
+      style="width:100%;text-align:left;padding:8px 12px;border:none;background:none;
+             font-size:13px;font-family:inherit;color:#c44;cursor:pointer;border-radius:6px">
+      Sign out
+    </button>`;
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', closeUserMenuOutside, {once:true}), 10);
+}
+function closeUserMenu() { document.getElementById('user-menu')?.remove(); }
+function closeUserMenuOutside(e) {
+  if (!document.getElementById('user-menu')?.contains(e.target)) closeUserMenu();
 }
 
-function fmtDate(d) {
-  return `${DAYS_FULL[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
-}
-
-function signupsFor(key) { return S.slots.filter(s => s.key === key); }
-
-function myKeys() {
-  if (!S.userName) return [];
-  return S.slots.filter(s => s.name === S.userName).map(s => s.key);
-}
-
-function weekDays(cursor) {
-  const dow = cursor.getDay();
-  return Array.from({length:7}, (_,i) => {
-    const d = new Date(cursor);
-    d.setDate(cursor.getDate() - dow + i);
-    return d;
-  });
-}
-
-// ── NAVIGATION ──────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════════
 function navigate(dir) {
   const d = new Date(S.cursor);
-  if (S.view === 'day')   d.setDate(d.getDate() + dir);
-  else if (S.view === 'week') d.setDate(d.getDate() + dir * 7);
-  else d.setMonth(d.getMonth() + dir);
-  S.cursor = d;
-  render();
+  if (S.view==='day') d.setDate(d.getDate()+dir);
+  else if (S.view==='week') d.setDate(d.getDate()+dir*7);
+  else d.setMonth(d.getMonth()+dir);
+  S.cursor = d; render();
+}
+function goToday()      { S.cursor=S.selected=new Date(); render(); }
+function switchView(v)  { S.view=v; render(); }
+function setPage(p)     { S.page=p; render(); }
+function selectDay(y,m,d) {
+  S.selected=new Date(y,m,d); S.cursor=new Date(y,m,d);
+  S.showAllDetail=false; render();
 }
 
-function goToday() {
-  S.cursor = S.selected = new Date();
-  render();
-}
-
-function switchView(v) {
-  S.view = v;
-  render();
-}
-
-function setPage(p) {
-  S.page = p;
-  render();
-}
-
-function selectDay(y, m, d) {
-  S.selected = new Date(y, m, d);
-  S.cursor   = new Date(y, m, d);
-  S.showAllDetail = false;
-  if (S.view === 'month') render(); else render();
-}
-
-// ── NAME ────────────────────────────────────────────────────────────────
-function promptName() {
-  const b = document.getElementById('name-banner');
-  const show = b.style.display === 'none' || b.style.display === '';
-  b.style.display = show ? 'flex' : 'none';
-  if (show) { document.getElementById('name-input').value = S.userName; document.getElementById('name-input').focus(); }
-}
-
-function saveName() {
-  const v = document.getElementById('name-input').value.trim();
-  if (!v) return;
-  S.userName = v;
-  localStorage.setItem('pfgp_name', v);
-  document.getElementById('name-banner').style.display = 'none';
-  render();
-}
-
-document.getElementById('name-input').addEventListener('keydown', e => { if(e.key==='Enter') saveName(); });
-
-// ── RENDER ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════════
 function render() {
-  // header labels
+  if (!S.initialized) return;
+
   const d = S.cursor;
   let mlabel = '';
-  if (S.view === 'day') mlabel = `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-  else if (S.view === 'week') {
-    const wd = weekDays(d);
-    const a = wd[0], b = wd[6];
+  if (S.view==='day') mlabel=`${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  else if (S.view==='week') {
+    const wd=weekDays(d), a=wd[0], b=wd[6];
     mlabel = a.getMonth()===b.getMonth()
       ? `${MONTHS[a.getMonth()]} ${a.getFullYear()}`
       : `${MONTHS[a.getMonth()].slice(0,3)} – ${MONTHS[b.getMonth()].slice(0,3)} ${a.getFullYear()}`;
@@ -1648,222 +1803,146 @@ function render() {
   document.getElementById('month-label').innerHTML = mlabel +
     ` <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`;
 
-  // user
-  const uname = S.userName || 'Set name';
-  document.getElementById('user-label').textContent = uname;
-  document.getElementById('user-avatar').textContent = S.userName ? S.userName[0].toUpperCase() : '?';
+  const uname = S.userName || (S.currentUser ? S.currentUser.email?.split('@')[0] : 'Sign in');
+  document.getElementById('user-label').textContent  = uname;
+  document.getElementById('user-avatar').textContent = uname[0]?.toUpperCase() || '?';
 
-  // view tabs
-  ['day','week','month'].forEach(v => {
-    document.getElementById('vt-'+v).classList.toggle('active', S.view === v);
-  });
-  ['calendar','mine','admin'].forEach(p => {
-    document.getElementById('pt-'+p).classList.toggle('active', S.page === p);
-  });
+  ['day','week','month'].forEach(v =>
+    document.getElementById('vt-'+v).classList.toggle('active', S.view===v));
+  ['calendar','mine','admin'].forEach(p =>
+    document.getElementById('pt-'+p).classList.toggle('active', S.page===p));
 
-  // content
   const ct = document.getElementById('content');
-  if (S.page === 'admin')    { ct.innerHTML = renderAdmin(); return; }
-  if (S.page === 'mine')     { ct.innerHTML = renderMySlots(); return; }
+  if (S.page==='admin') { ct.innerHTML=renderAdmin(); return; }
+  if (S.page==='mine')  { ct.innerHTML=renderMySlots(); return; }
 
-  // calendar + detail
-  let calHtml = '';
-  if (S.view === 'month')     calHtml = renderMonthCal();
-  else if (S.view === 'week') calHtml = renderWeekCal();
-  else                        calHtml = renderDayCal();
+  let cal = '';
+  if (S.view==='month')      cal=renderMonthCal();
+  else if (S.view==='week')  cal=renderWeekCal();
+  else                       cal=renderDayCal();
+  ct.innerHTML = cal + renderDetailPanel();
 
-  ct.innerHTML = calHtml + renderDetailPanel();
-
-  // scroll week/day to 7am
-  if (S.view !== 'month') {
-    const sc = ct.querySelector('.week-body, .day-body');
-    if (sc) sc.scrollTop = (7 - 5) * 4 * 28;
+  if (S.view!=='month') {
+    const sc = ct.querySelector('.week-body,.day-body');
+    if (sc) sc.scrollTop=(7-5)*4*28;
   }
 }
 
-// ── MONTH CALENDAR ──────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// CALENDAR VIEWS
+// ══════════════════════════════════════════════════════════════════════
 function renderMonthCal() {
-  const year = S.cursor.getFullYear(), month = S.cursor.getMonth();
-  const first = new Date(year, month, 1).getDay();
-  const dim   = new Date(year, month+1, 0).getDate();
-  const mk    = new Set(myKeys());
+  const year=S.cursor.getFullYear(), month=S.cursor.getMonth();
+  const first=new Date(year,month,1).getDay(), dim=new Date(year,month+1,0).getDate();
+  const mk=new Set(myKeys());
+  const dowRow = DAYS_SHORT.map(d=>`<div class="dow-cell">${d}</div>`).join('');
+  let cells='';
 
-  const dowRow = DAYS_SHORT.map(d =>
-    `<div class="dow-cell">${d}</div>`
-  ).join('');
-
-  let cells = '';
-
-  for (let i = 0; i < first; i++) {
-    const pd = new Date(year, month, -first+i+1);
-    cells += `<div class="mcell other-month" onclick="selectDay(${pd.getFullYear()},${pd.getMonth()},${pd.getDate()})">
-      <div class="mday">${pd.getDate()}</div></div>`;
+  for (let i=0;i<first;i++){
+    const pd=new Date(year,month,-first+i+1);
+    cells+=`<div class="mcell other-month" onclick="selectDay(${pd.getFullYear()},${pd.getMonth()},${pd.getDate()})"><div class="mday">${pd.getDate()}</div></div>`;
   }
-
-  for (let day = 1; day <= dim; day++) {
-    const date   = new Date(year, month, day);
-    const dStr   = `${year}-${pad(month+1)}-${pad(day)}`;
-    const isSel  = same(date, S.selected);
-    const daySlots = S.slots.filter(s => s.key.startsWith(dStr));
-    const uKeys  = [...new Set(daySlots.map(s => s.key))];
-
-    // Up to 5 indicator lines
-    const lines  = uKeys.slice(0,5).map(k =>
-      `<div class="slot-line ${mk.has(k)?'mine':''}"></div>`
-    ).join('');
-
-    cells += `
+  for (let day=1;day<=dim;day++){
+    const date=new Date(year,month,day);
+    const dStr=`${year}-${pad(month+1)}-${pad(day)}`;
+    const isSel=same(date,S.selected);
+    const uKeys=[...new Set(S.slots.filter(s=>s.slotKey.startsWith(dStr)).map(s=>s.slotKey))];
+    const lines=uKeys.slice(0,5).map(k=>`<div class="slot-line ${mk.has(k)?'mine':''}"></div>`).join('');
+    cells+=`
       <div class="mcell${isToday(date)?' is-today':''}${isSel?' is-selected':''}"
            onclick="selectDay(${year},${month},${day})">
         <div class="mday">${day}</div>
         <div class="slot-lines">${lines}</div>
       </div>`;
   }
+  const rem=(first+dim)%7===0?0:7-(first+dim)%7;
+  for (let i=1;i<=rem;i++)
+    cells+=`<div class="mcell other-month" onclick="selectDay(${year},${month+1},${i})"><div class="mday">${i}</div></div>`;
 
-  const total = first + dim;
-  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
-  for (let i = 1; i <= rem; i++) {
-    cells += `<div class="mcell other-month" onclick="selectDay(${year},${month+1},${i})">
-      <div class="mday">${i}</div></div>`;
-  }
-
-  return `
-    <div class="cal-wrap">
-      <div class="dow-row">${dowRow}</div>
-      <div class="month-grid">${cells}</div>
-    </div>`;
+  return `<div class="cal-wrap"><div class="dow-row">${dowRow}</div><div class="month-grid">${cells}</div></div>`;
 }
 
-// ── WEEK CALENDAR ────────────────────────────────────────────────────────
 function renderWeekCal() {
-  const days = weekDays(S.cursor);
-  const mk   = new Set(myKeys());
-
-  const headCols = days.map(d => {
-    const isSel = same(d, S.selected);
-    const isTod = isToday(d);
-    const cls   = `week-head-col${isTod?' wh-today':''}${isSel?' wh-selected':''}`;
+  const days=weekDays(S.cursor), mk=new Set(myKeys());
+  const headCols=days.map(d=>{
+    const cls=`week-head-col${isToday(d)?' wh-today':''}${same(d,S.selected)?' wh-selected':''}`;
     return `<div class="${cls}" onclick="selectDay(${d.getFullYear()},${d.getMonth()},${d.getDate()})">
       <div class="wh-dow">${DAYS_SHORT[d.getDay()]}</div>
       <div class="wh-num">${d.getDate()}</div>
     </div>`;
   }).join('');
-
-  const gutterRows = ALL_SLOTS.map(({hour,min}) =>
-    `<div class="wtime-label${min===0?' hl':''}">
-      ${min===0 ? fmtTime(hour,0).replace(':00 ',' ') : ''}
-    </div>`
-  ).join('');
-
-  let dayCols = '';
-  days.forEach(d => {
-    const rows = ALL_SLOTS.map(({hour,min}) => {
-      const k    = slotKey(d, hour, min);
-      const sups = signupsFor(k);
-      const mine = mk.has(k);
-      return `<div class="wslot${mine?' wslot-mine':''}${min===0?' wslot-hour':''}"
-                   onclick="openSlot('${k}')">
-        ${mine ? '<div class="wslot-dot"></div>' : ''}
-        ${sups.length > 0 && !mine ? `<div class="wslot-count">${sups.length}</div>` : ''}
+  const gutter=ALL_SLOTS.map(({hour,min})=>
+    `<div class="wtime-label${min===0?' hl':''}">${min===0?fmtTime(hour,0).replace(':00 ',' '):''}</div>`).join('');
+  let dayCols='';
+  days.forEach(d=>{
+    const rows=ALL_SLOTS.map(({hour,min})=>{
+      const k=slotKey(d,hour,min), sups=signupsFor(k), mine=mk.has(k);
+      return `<div class="wslot${mine?' wslot-mine':''}${min===0?' wslot-hour':''}" onclick="openSlot('${k}')">
+        ${mine?'<div class="wslot-dot"></div>':''}
+        ${sups.length>0&&!mine?`<div class="wslot-count">${sups.length}</div>`:''}
       </div>`;
     }).join('');
-    dayCols += `<div class="wday-col">${rows}</div>`;
+    dayCols+=`<div class="wday-col">${rows}</div>`;
   });
-
   return `
     <div class="week-wrap">
-      <div class="week-head-row">
-        <div class="week-head-gutter"></div>
-        ${headCols}
-      </div>
-      <div class="week-body">
-        <div class="wtime-col">${gutterRows}</div>
-        <div class="wday-cols">${dayCols}</div>
-      </div>
+      <div class="week-head-row"><div class="week-head-gutter"></div>${headCols}</div>
+      <div class="week-body"><div class="wtime-col">${gutter}</div><div class="wday-cols">${dayCols}</div></div>
     </div>`;
 }
 
-// ── DAY CALENDAR ────────────────────────────────────────────────────────
 function renderDayCal() {
-  const d  = S.cursor;
-  const mk = new Set(myKeys());
-
-  const gutter = ALL_SLOTS.map(({hour,min}) =>
-    `<div class="dtime-label${min===0?' hl':''}">
-      ${min===0 ? fmtTime(hour,0).replace(':00 ',' ') : ''}
-    </div>`
-  ).join('');
-
-  const slotRows = ALL_SLOTS.map(({hour,min}) => {
-    const k    = slotKey(d, hour, min);
-    const sups = signupsFor(k);
-    const mine = mk.has(k);
-    return `<div class="dslot${mine?' dslot-mine':''}${min===0?' dslot-hour':''}"
-                 onclick="openSlot('${k}')">
-      ${mine ? '<div class="dslot-dot"></div>' : ''}
-      ${sups.length > 0 ? `<div class="dslot-count">${sups.length} praying</div>` : ''}
+  const d=S.cursor, mk=new Set(myKeys());
+  const gutter=ALL_SLOTS.map(({hour,min})=>
+    `<div class="dtime-label${min===0?' hl':''}">${min===0?fmtTime(hour,0).replace(':00 ',' '):''}</div>`).join('');
+  const rows=ALL_SLOTS.map(({hour,min})=>{
+    const k=slotKey(d,hour,min), sups=signupsFor(k), mine=mk.has(k);
+    return `<div class="dslot${mine?' dslot-mine':''}${min===0?' dslot-hour':''}" onclick="openSlot('${k}')">
+      ${mine?'<div class="dslot-dot"></div>':''}
+      ${sups.length>0?`<div class="dslot-count">${sups.length} praying</div>`:''}
     </div>`;
   }).join('');
-
   return `
     <div class="day-wrap">
-      <div class="day-header">
-        <h2>${DAYS_FULL[d.getDay()]} <em>${d.getDate()}</em></h2>
-      </div>
-      <div class="day-body">
-        <div class="dtime-col">${gutter}</div>
-        <div class="dslots-col">${slotRows}</div>
-      </div>
+      <div class="day-header"><h2>${DAYS_FULL[d.getDay()]} <em>${d.getDate()}</em></h2></div>
+      <div class="day-body"><div class="dtime-col">${gutter}</div><div class="dslots-col">${rows}</div></div>
     </div>`;
 }
 
-// ── DETAIL PANEL ──────────────────────────────────────────────────────────
 function renderDetailPanel() {
-  const sel  = S.selected;
-  const dStr = `${sel.getFullYear()}-${pad(sel.getMonth()+1)}-${pad(sel.getDate())}`;
-  const mk   = new Set(myKeys());
+  const sel=S.selected;
+  const dStr=`${sel.getFullYear()}-${pad(sel.getMonth()+1)}-${pad(sel.getDate())}`;
+  const mk=new Set(myKeys());
+  const dayKeys=[...new Set(S.slots.filter(s=>s.slotKey.startsWith(dStr)).map(s=>s.slotKey))];
+  const LIMIT=6;
+  let slotItems='';
 
-  // slots that have at least one signup, OR all slots for the day (show all)
-  const daySignupKeys = [...new Set(S.slots.filter(s => s.key.startsWith(dStr)).map(s => s.key))];
-
-  const dayNum = sel.getDate();
-  const isT    = isToday(sel);
-
-  let slotItems = '';
-  const LIMIT = 6;
-
-  if (daySignupKeys.length === 0) {
-    slotItems = `<div class="detail-empty">No slots signed up yet.<br>
-      ${S.userName ? 'Click any time to add yourself.' : 'Set your name to sign up.'}</div>`;
+  if (dayKeys.length===0) {
+    slotItems=`<div class="detail-empty">No slots yet.<br>${S.currentUser?'Click a time to sign up.':'Sign in to add yourself.'}</div>`;
   } else {
-    const shown = S.showAllDetail ? daySignupKeys : daySignupKeys.slice(0, LIMIT);
-    shown.sort().forEach(k => {
-      const p    = parseKey(k);
-      const sups = signupsFor(k);
-      const mine = mk.has(k);
-      slotItems += `
+    const shown=S.showAllDetail?dayKeys:dayKeys.slice(0,LIMIT);
+    shown.sort().forEach(k=>{
+      const p=parseKey(k), sups=signupsFor(k), mine=mk.has(k);
+      slotItems+=`
         <div class="detail-slot${mine?' ds-mine':''}" onclick="openSlot('${k}')">
           <div>
-            <div class="ds-time">${fmtTime(p.hour, p.min)}</div>
-            <div class="ds-time-end">${fmtTime(p.hour, p.min+15)}</div>
+            <div class="ds-time">${fmtTime(p.hour,p.min)}</div>
+            <div class="ds-time-end">${fmtTime(p.hour,p.min+15)}</div>
           </div>
           <div class="ds-right">
-            ${sups.length > 0 ? `<span class="ds-count">${sups.length}</span>` : ''}
-            ${mine ? '<div class="ds-mine-dot"></div>' : ''}
+            ${sups.length>0?`<span class="ds-count">${sups.length}</span>`:''}
+            ${mine?'<div class="ds-mine-dot"></div>':''}
           </div>
         </div>`;
     });
-    if (!S.showAllDetail && daySignupKeys.length > LIMIT) {
-      slotItems += `<button class="detail-show-more" onclick="S.showAllDetail=true;render()">
-        + ${daySignupKeys.length - LIMIT} more slots
-      </button>`;
-    }
+    if (!S.showAllDetail && dayKeys.length>LIMIT)
+      slotItems+=`<button class="detail-show-more" onclick="S.showAllDetail=true;render()">+ ${dayKeys.length-LIMIT} more</button>`;
   }
 
   return `
     <div class="detail-panel">
       <div class="detail-header">
-        <div class="detail-day-num">${isT ? `<em>${dayNum}</em>` : dayNum}</div>
+        <div class="detail-day-num">${isToday(sel)?`<em>${sel.getDate()}</em>`:sel.getDate()}</div>
         <div class="detail-month">${MONTHS[sel.getMonth()]} · ${DAYS_FULL[sel.getDay()]}</div>
       </div>
       <div class="detail-body">
@@ -1873,110 +1952,88 @@ function renderDetailPanel() {
     </div>`;
 }
 
-// ── MODAL ──────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// SLOT MODAL
+// ══════════════════════════════════════════════════════════════════════
 let pendingKey = null;
 
 function openSlot(key) {
-  pendingKey = key;
-  const p     = parseKey(key);
-  const date  = new Date(p.year, p.month, p.day);
-  const sups  = signupsFor(key);
-  const mine  = S.slots.some(s => s.key===key && s.name===S.userName);
-
-  document.getElementById('m-eyebrow').textContent = 'Prayer Slot';
-  document.getElementById('m-title').textContent   = mine ? "You’re signed up" : 'Sign up to pray';
-  document.getElementById('m-sub').textContent     =
-    `${fmtDate(date)} · ${fmtTime(p.hour, p.min)} – ${fmtTime(p.hour, p.min+15)}`;
-
-  let body = '';
-  if (!mine) {
-    body += `<label for="mn-input">Your Name</label>
-      <input type="text" id="mn-input" placeholder="Enter your name" value="${S.userName}" />`;
+  if (!S.currentUser) {
+    OB.mode='signin'; OB.error='';
+    const ov=document.getElementById('ob-overlay');
+    ov.style.display='flex'; ov.classList.remove('ob-exit'); obRender(); return;
   }
-  if (sups.length > 0) {
-    body += `<div class="modal-attendees" style="margin-top:${mine?'0':'14px'}">
+  pendingKey=key;
+  const p=parseKey(key), date=new Date(p.year,p.month,p.day);
+  const sups=signupsFor(key), mine=S.slots.some(s=>s.slotKey===key&&s.userId===S.currentUser.uid);
+
+  document.getElementById('m-eyebrow').textContent='Prayer Slot';
+  document.getElementById('m-title').textContent=mine?"You're signed up":'Sign up to pray';
+  document.getElementById('m-sub').textContent=
+    `${fmtDate(date)} · ${fmtTime(p.hour,p.min)} – ${fmtTime(p.hour,p.min+15)}`;
+
+  let body='';
+  if (sups.length>0) {
+    body=`<div class="modal-attendees">
       <div class="modal-attendees-label">${sups.length} ${sups.length===1?'person':'people'} praying</div>
-      <div>${sups.map(s=>`<div class="attendee">${s.name}</div>`).join('')}</div>
+      <div>${sups.map(s=>`<div class="attendee">${s.userName}</div>`).join('')}</div>
     </div>`;
   }
-  document.getElementById('m-body').innerHTML = body;
+  document.getElementById('m-body').innerHTML=body;
 
-  let actions = '';
-  if (mine) {
-    actions = `<button class="btn btn-danger" onclick="removeSlot('${key}');closeModal()">Remove signup</button>
-               <button class="btn btn-ghost" onclick="closeModal()">Close</button>`;
-  } else {
-    actions = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-               <button class="btn btn-primary" onclick="signUp()">Sign me up</button>`;
-  }
-  document.getElementById('m-actions').innerHTML = actions;
+  document.getElementById('m-actions').innerHTML = mine
+    ? `<button class="btn btn-danger"  onclick="removeSlotFromDb('${key}')">Remove signup</button>
+       <button class="btn btn-ghost"   onclick="closeModal()">Close</button>`
+    : `<button class="btn btn-ghost"   onclick="closeModal()">Cancel</button>
+       <button class="btn btn-primary" onclick="doSignUp('${key}')">Sign me up</button>`;
 
   document.getElementById('backdrop').classList.add('open');
-  if (!mine) setTimeout(() => document.getElementById('mn-input')?.focus(), 60);
 }
 
 function closeModal(e) {
-  if (!e || e.target.id === 'backdrop') {
+  if (!e||e.target.id==='backdrop') {
     document.getElementById('backdrop').classList.remove('open');
-    pendingKey = null;
+    pendingKey=null;
   }
 }
 
-function signUp() {
-  const inp  = document.getElementById('mn-input');
-  const name = inp ? inp.value.trim() : S.userName;
-  if (!name) { if(inp) inp.style.borderColor='#c44'; return; }
-  if (name !== S.userName) {
-    S.userName = name;
-    localStorage.setItem('pfgp_name', name);
-  }
-  S.slots.push({ key: pendingKey, name });
-  saveSlots();
-  closeModal();
-  render();
+async function doSignUp(key) {
+  if (!S.currentUser) return;
+  document.getElementById('backdrop').classList.remove('open');
+  await addSlotToDb(key||pendingKey);
+  pendingKey=null;
 }
 
-function removeSlot(key) {
-  if (!S.userName) return;
-  S.slots = S.slots.filter(s => !(s.key===key && s.name===S.userName));
-  saveSlots();
-  render();
-}
-
-// ── MY SLOTS ────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// PAGES
+// ══════════════════════════════════════════════════════════════════════
 function renderMySlots() {
-  if (!S.userName) return `
-    <div class="page-content">
-      <div class="empty-page">
-        <div class="empty-icon">🙏</div>
-        <h2>Your Prayer Slots</h2>
-        <p>Set your name to view your scheduled prayer times.</p>
-        <button class="green-btn" onclick="promptName()">Set my name</button>
-      </div>
-    </div>`;
+  if (!S.currentUser) return `
+    <div class="page-content"><div class="empty-page">
+      <div class="empty-icon">🙏</div><h2>Your Prayer Slots</h2>
+      <p>Sign in to view your scheduled prayer times.</p>
+      <button class="green-btn" onclick="toggleUserMenu()">Sign in</button>
+    </div></div>`;
 
-  const mine = S.slots.filter(s=>s.name===S.userName).sort((a,b)=>a.key.localeCompare(b.key));
+  const mine=S.slots.filter(s=>s.userId===S.currentUser.uid)
+    .sort((a,b)=>a.slotKey.localeCompare(b.slotKey));
 
-  if (mine.length === 0) return `
-    <div class="page-content">
-      <div class="empty-page">
-        <div class="empty-icon">📅</div>
-        <h2>No slots yet</h2>
-        <p>Head to the calendar to sign up for a prayer time.</p>
-        <button class="green-btn" onclick="setPage('calendar')">Open calendar</button>
-      </div>
-    </div>`;
+  if (mine.length===0) return `
+    <div class="page-content"><div class="empty-page">
+      <div class="empty-icon">📅</div><h2>No slots yet</h2>
+      <p>Head to the calendar to sign up for a prayer time.</p>
+      <button class="green-btn" onclick="setPage('calendar')">Open calendar</button>
+    </div></div>`;
 
-  const rows = mine.map(s => {
-    const p    = parseKey(s.key);
-    const date = new Date(p.year, p.month, p.day);
+  const rows=mine.map(s=>{
+    const p=parseKey(s.slotKey), date=new Date(p.year,p.month,p.day);
     return `<div class="slot-list-row">
       <div>
         <div class="slr-label">${fmtDate(date)}</div>
         <div class="slr-sub">${fmtTime(p.hour,p.min)} – ${fmtTime(p.hour,p.min+15)}</div>
       </div>
       <button class="btn btn-danger" style="flex:none;padding:6px 14px;font-size:12px"
-              onclick="removeSlot('${s.key}')">Remove</button>
+              onclick="removeSlotFromDb('${s.slotKey}')">Remove</button>
     </div>`;
   }).join('');
 
@@ -1988,13 +2045,11 @@ function renderMySlots() {
     </div>`;
 }
 
-// ── ADMIN ────────────────────────────────────────────────────────────────
 function renderAdmin() {
   if (!S.adminUnlocked) return `
     <div class="page-content" style="max-width:360px">
       <div class="empty-page" style="padding-top:60px">
-        <div class="empty-icon">🔒</div>
-        <h2>Admin Access</h2>
+        <div class="empty-icon">🔒</div><h2>Admin Access</h2>
         <p>Enter the admin password to view all prayer slots.</p>
         <input type="password" id="ap-input" placeholder="Password"
           style="width:100%;padding:10px 13px;border:1px solid var(--gray-300);border-radius:8px;
@@ -2005,41 +2060,32 @@ function renderAdmin() {
       </div>
     </div>`;
 
-  const grouped = {};
-  S.slots.forEach(s => {
-    const p  = parseKey(s.key);
-    const dk = `${p.year}-${pad(p.month+1)}-${pad(p.day)}`;
-    if (!grouped[dk]) grouped[dk] = {};
-    if (!grouped[dk][s.key]) grouped[dk][s.key] = [];
-    grouped[dk][s.key].push(s.name);
+  const grouped={};
+  S.slots.forEach(s=>{
+    const p=parseKey(s.slotKey), dk=`${p.year}-${pad(p.month+1)}-${pad(p.day)}`;
+    if(!grouped[dk]) grouped[dk]={};
+    if(!grouped[dk][s.slotKey]) grouped[dk][s.slotKey]=[];
+    grouped[dk][s.slotKey].push(s.userName);
   });
-
-  const dks = Object.keys(grouped).sort();
-  if (dks.length === 0) return `
+  const dks=Object.keys(grouped).sort();
+  if (dks.length===0) return `
     <div class="page-content">
       <h2>All Prayer Slots <span class="admin-badge">Admin</span></h2>
-      <p class="page-subtitle">No slots yet.</p>
-    </div>`;
+      <p class="page-subtitle">No slots yet.</p></div>`;
 
-  const sections = dks.map(dk => {
-    const [y,m,d] = dk.split('-').map(Number);
-    const date = new Date(y,m-1,d);
-    const rows = Object.entries(grouped[dk]).sort(([a],[b])=>a.localeCompare(b)).map(([key,names]) => {
-      const p = parseKey(key);
+  const sections=dks.map(dk=>{
+    const [y,m,d]=dk.split('-').map(Number), date=new Date(y,m-1,d);
+    const rows=Object.entries(grouped[dk]).sort(([a],[b])=>a.localeCompare(b)).map(([key,names])=>{
+      const p=parseKey(key);
       return `<div class="admin-slot-row">
         <div class="asr-time">${fmtTime(p.hour,p.min)}</div>
         <div class="asr-names">${names.map(n=>`<span class="asr-name">${n}</span>`).join('')}</div>
       </div>`;
     }).join('');
-    return `<div class="admin-section">
-      <div class="admin-date-head">${fmtDate(date)}</div>
-      ${rows}
-    </div>`;
+    return `<div class="admin-section"><div class="admin-date-head">${fmtDate(date)}</div>${rows}</div>`;
   }).join('');
 
-  const total  = S.slots.length;
-  const people = [...new Set(S.slots.map(s=>s.name))].length;
-
+  const total=S.slots.length, people=[...new Set(S.slots.map(s=>s.userName))].length;
   return `
     <div class="page-content">
       <h2>All Prayer Slots <span class="admin-badge">Admin</span></h2>
@@ -2049,35 +2095,48 @@ function renderAdmin() {
 }
 
 function checkAdmin() {
-  const v = document.getElementById('ap-input').value;
-  if (v === 'pray2025') { S.adminUnlocked = true; render(); }
-  else document.getElementById('ap-err').textContent = 'Incorrect password';
+  if (document.getElementById('ap-input').value==='pray2025') { S.adminUnlocked=true; render(); }
+  else document.getElementById('ap-err').textContent='Incorrect password';
 }
 
-// ── KEYBOARD ────────────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
+// ══════════════════════════════════════════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e=>{
   if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
-  if (e.key === 'ArrowLeft')  navigate(-1);
-  if (e.key === 'ArrowRight') navigate(1);
-  if (e.key === 't')          goToday();
-  if (e.key === 'd')          switchView('day');
-  if (e.key === 'w')          switchView('week');
-  if (e.key === 'm')          switchView('month');
-  if (e.key === 'Escape')     closeModal();
+  const ov=document.getElementById('ob-overlay');
+  if (ov && ov.style.display!=='none') {
+    if (e.key==='Enter') {
+      if (OB.mode==='signin') obSignIn();
+      else if (['name','email'].includes(obSteps()[OB.step])) obNext();
+    }
+    return;
+  }
+  if (e.key==='ArrowLeft')  navigate(-1);
+  if (e.key==='ArrowRight') navigate(1);
+  if (e.key==='t')          goToday();
+  if (e.key==='d')          switchView('day');
+  if (e.key==='w')          switchView('week');
+  if (e.key==='m')          switchView('month');
+  if (e.key==='Escape')     closeModal();
 });
 
-// ── INIT ────────────────────────────────────────────────────────────────
-const alreadyOnboarded = localStorage.getItem('pfgp_onboarded');
+// ══════════════════════════════════════════════════════════════════════
+// WINDOW EXPORTS  (needed for inline onclick in rendered HTML)
+// ══════════════════════════════════════════════════════════════════════
+Object.assign(window, {
+  navigate, goToday, switchView, setPage, selectDay,
+  obNext, obSkip, obFinish, obSignIn, obToggleDay, obRender,
+  openSlot, closeModal, doSignUp, removeSlotFromDb,
+  toggleUserMenu, doSignOut, checkAdmin,
+  S, OB,
+});
 
-if (alreadyOnboarded) {
-  // returning user — hide overlay immediately, show app
-  document.getElementById('ob-overlay').style.display = 'none';
-  render();
-} else {
-  // new user — show onboarding, render app in background
-  obRender();
-  render();
-}
+// ══════════════════════════════════════════════════════════════════════
+// INIT  — onAuthStateChanged drives everything after Firebase loads
+// ══════════════════════════════════════════════════════════════════════
+render(); // render skeleton while Firebase resolves
+</script>
 </script>
 </body>
 </html>
