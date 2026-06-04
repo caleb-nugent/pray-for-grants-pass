@@ -1894,7 +1894,7 @@ onAuthStateChanged(auth, async user => {
 
     if (profile) { S.userName = profile.name || ''; S.profile = profile; }
     setupSlotsListener();
-    if (window.innerWidth <= 768) S.page = 'mine';
+    S.page = 'mine';
     // hide onboarding
     const ov = document.getElementById('ob-overlay');
     ov.classList.add('ob-exit');
