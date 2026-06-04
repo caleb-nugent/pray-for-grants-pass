@@ -791,6 +791,334 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+    /* ══════════════════════════════════════════
+       ONBOARDING OVERLAY
+    ══════════════════════════════════════════ */
+    #ob-overlay {
+      position: fixed; inset: 0;
+      background: #ffffff;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px 80px;
+      transition: opacity 0.5s ease;
+    }
+    #ob-overlay.ob-exit {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* top bar inside onboarding */
+    .ob-topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+    .ob-logo {
+      display: flex; align-items: center; gap: 9px;
+    }
+    .ob-logo-mark {
+      width: 26px; height: 26px;
+      background: var(--green);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 12px;
+    }
+    .ob-logo span {
+      font-family: 'Fraunces', serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--black);
+    }
+    .ob-logo span em { font-style: italic; color: var(--green); }
+
+    /* progress dots */
+    .ob-dots {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .ob-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gray-300);
+      transition: all 0.3s;
+    }
+    .ob-dot.active {
+      background: var(--green);
+      width: 18px;
+      border-radius: 3px;
+    }
+    .ob-dot.done { background: var(--green-mid); }
+
+    /* skip */
+    .ob-skip {
+      font-size: 12px;
+      color: var(--gray-500);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px 0;
+    }
+    .ob-skip:hover { color: var(--black); }
+
+    /* step wrapper */
+    #ob-step {
+      width: 100%;
+      max-width: 520px;
+      text-align: left;
+    }
+
+    .ob-step-inner {
+      animation: ob-rise 0.38s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes ob-rise {
+      from { opacity: 0; transform: translateY(32px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ob-step-inner.ob-exit-step {
+      animation: ob-fall 0.22s ease-in both;
+    }
+    @keyframes ob-fall {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(-20px); }
+    }
+
+    .ob-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 14px;
+    }
+
+    .ob-q {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(26px, 4vw, 38px);
+      font-weight: 300;
+      line-height: 1.2;
+      color: var(--black);
+      margin-bottom: 8px;
+    }
+    .ob-q em { font-style: italic; color: var(--green); }
+
+    .ob-hint {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-bottom: 36px;
+      line-height: 1.5;
+    }
+
+    /* text / email input */
+    .ob-input-wrap {
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .ob-input {
+      width: 100%;
+      font-size: 22px;
+      font-family: 'Proxima Nova', 'Nunito', sans-serif;
+      font-weight: 300;
+      color: var(--black);
+      border: none;
+      border-bottom: 2px solid var(--gray-300);
+      padding: 8px 0 10px;
+      outline: none;
+      background: transparent;
+      transition: border-color 0.2s;
+    }
+    .ob-input:focus { border-bottom-color: var(--green); }
+    .ob-input::placeholder { color: var(--gray-300); }
+
+    /* continue button */
+    .ob-continue {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 28px;
+      padding: 11px 24px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .ob-continue:hover { background: #245c43; }
+    .ob-continue:active { transform: scale(0.97); }
+    .ob-continue-arrow { font-size: 16px; }
+
+    .ob-enter-hint {
+      display: inline-block;
+      margin-left: 16px;
+      font-size: 11px;
+      color: var(--gray-500);
+      vertical-align: middle;
+    }
+    .ob-enter-hint kbd {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 2px 6px;
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: inherit;
+      background: var(--gray-100);
+      margin-right: 3px;
+    }
+
+    /* option cards (frequency) */
+    .ob-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .ob-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: white;
+      text-align: left;
+      font-family: inherit;
+    }
+    .ob-option:hover { border-color: var(--green); background: var(--green-light); }
+    .ob-option.selected { border-color: var(--green); background: var(--green-light); }
+
+    .ob-option-label {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--black);
+    }
+    .ob-option-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .ob-option-check {
+      width: 20px; height: 20px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .ob-option.selected .ob-option-check {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+
+    /* chip grids (days, times) */
+    .ob-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .ob-chip {
+      padding: 9px 16px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: white;
+      color: var(--black);
+      white-space: nowrap;
+    }
+    .ob-chip:hover { border-color: var(--green); color: var(--green); }
+    .ob-chip.selected {
+      border-color: var(--green);
+      background: var(--green);
+      color: white;
+    }
+
+    .ob-time-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* toggle / consent */
+    .ob-consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px 0;
+      cursor: pointer;
+    }
+    .ob-toggle {
+      width: 38px; height: 22px;
+      border-radius: 11px;
+      background: var(--gray-300);
+      position: relative;
+      flex-shrink: 0;
+      transition: background 0.2s;
+      cursor: pointer;
+      border: none;
+      margin-top: 1px;
+    }
+    .ob-toggle::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: white;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .ob-toggle.on { background: var(--green); }
+    .ob-toggle.on::after { transform: translateX(16px); }
+    .ob-consent-text { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
+    .ob-consent-text strong { color: var(--black); display: block; margin-bottom: 2px; font-size: 14px; }
+
+    /* completion screen */
+    .ob-done-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--green-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin-bottom: 24px;
+    }
+    .ob-done-q { font-size: 32px; margin-bottom: 10px; }
+    .ob-done-sub { font-size: 15px; color: var(--gray-500); line-height: 1.6; margin-bottom: 32px; }
+
+    .ob-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 20px 0 32px;
+    }
+    .ob-summary-row {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: var(--gray-700);
+    }
+    .ob-summary-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -844,6 +1172,19 @@
   <div class="content" id="content"></div>
 </div>
 
+<!-- ONBOARDING OVERLAY -->
+<div id="ob-overlay">
+  <div class="ob-topbar">
+    <div class="ob-logo">
+      <div class="ob-logo-mark">✦</div>
+      <span>Pray for <em>GP</em></span>
+    </div>
+    <div class="ob-dots" id="ob-dots"></div>
+    <button class="ob-skip" onclick="obSkip()">Skip →</button>
+  </div>
+  <div id="ob-step"></div>
+</div>
+
 <!-- MODAL -->
 <div class="backdrop" id="backdrop" onclick="closeModal(event)">
   <div class="modal">
@@ -856,6 +1197,320 @@
 </div>
 
 <script>
+// ══════════════════════════════════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════════════════════════════════
+
+const OB = {
+  step: 0,
+  name: '',
+  email: '',
+  emailConsent: true,
+  frequency: '',   // 'daily' | 'weekly' | 'monthly'
+  days: [],        // [0-6] for weekly, [1-28] for monthly
+  hour: null,
+  transitioning: false,
+};
+
+// Steps: name → email → frequency → [day] → time → done
+// 'day' is skipped when frequency === 'daily'
+function obSteps() {
+  const base = ['name','email','frequency','time','done'];
+  if (OB.frequency === 'weekly' || OB.frequency === 'monthly') {
+    return ['name','email','frequency','day','time','done'];
+  }
+  return base;
+}
+function obTotalVisible() { return obSteps().length - 1; } // exclude 'done'
+function obCurrentIdx()   { return OB.step; }
+
+function obRender() {
+  const steps   = obSteps();
+  const stepId  = steps[OB.step];
+  const total   = obTotalVisible();
+
+  // dots
+  const dots = document.getElementById('ob-dots');
+  dots.innerHTML = steps.slice(0,-1).map((_,i) => {
+    const cls = i < OB.step ? 'done' : i === OB.step ? 'active' : '';
+    return `<div class="ob-dot ${cls}"></div>`;
+  }).join('');
+
+  // step content
+  let html = '';
+  if (stepId === 'name') {
+    html = `
+      <div class="ob-eyebrow">Welcome</div>
+      <div class="ob-q">What's your name?</div>
+      <div class="ob-hint">We'll use this to track your prayer slots.</div>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-name-inp" type="text"
+          placeholder="First name" value="${OB.name}"
+          autocomplete="given-name" />
+      </div>
+      <div>
+        <button class="ob-continue" onclick="obNext()">
+          Continue <span class="ob-continue-arrow">→</span>
+        </button>
+        <span class="ob-enter-hint"><kbd>Enter</kbd> to continue</span>
+      </div>`;
+  }
+  else if (stepId === 'email') {
+    html = `
+      <div class="ob-eyebrow">Step 2 of ${total}</div>
+      <div class="ob-q">What's your email${OB.name ? `, <em>${OB.name}</em>` : ''}?</div>
+      <div class="ob-hint">Optional — we'll only use this to send prayer reminders.</div>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-email-inp" type="email"
+          placeholder="your@email.com" value="${OB.email}"
+          autocomplete="email" />
+      </div>
+      <div class="ob-consent" onclick="OB.emailConsent=!OB.emailConsent;obRender()">
+        <button class="ob-toggle ${OB.emailConsent?'on':''}" onclick="event.stopPropagation();OB.emailConsent=!OB.emailConsent;obRender()"></button>
+        <div class="ob-consent-text">
+          <strong>Send me prayer reminders</strong>
+          Notify me when my prayer time is coming up or when new needs are shared.
+        </div>
+      </div>
+      <div>
+        <button class="ob-continue" onclick="obNext()">
+          Continue <span class="ob-continue-arrow">→</span>
+        </button>
+        <span class="ob-enter-hint"><kbd>Enter</kbd> to continue</span>
+      </div>`;
+  }
+  else if (stepId === 'frequency') {
+    const opts = [
+      { val:'daily',   label:'Daily',   sub:'A short time every day' },
+      { val:'weekly',  label:'Weekly',  sub:'Once a week, same day and time' },
+      { val:'monthly', label:'Monthly', sub:'One day each month' },
+    ];
+    html = `
+      <div class="ob-eyebrow">Step 3 of ${total}</div>
+      <div class="ob-q">How often would you like to<br>pray for Grants Pass?</div>
+      <div class="ob-hint">You can always adjust this later.</div>
+      <div class="ob-options">
+        ${opts.map(o => `
+          <button class="ob-option ${OB.frequency===o.val?'selected':''}"
+                  onclick="OB.frequency='${o.val}';obNext()">
+            <div>
+              <div class="ob-option-label">${o.label}</div>
+              <div class="ob-option-sub">${o.sub}</div>
+            </div>
+            <div class="ob-option-check">${OB.frequency===o.val?'✓':''}</div>
+          </button>`).join('')}
+      </div>`;
+  }
+  else if (stepId === 'day') {
+    if (OB.frequency === 'weekly') {
+      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      html = `
+        <div class="ob-eyebrow">Step 4 of ${total}</div>
+        <div class="ob-q">Which day of the week?</div>
+        <div class="ob-hint">Pick the day you'd like to set aside for prayer.</div>
+        <div class="ob-chips">
+          ${dayNames.map((d,i) => `
+            <button class="ob-chip ${OB.days.includes(i)?'selected':''}"
+                    onclick="obToggleDay(${i})">${d}</button>`).join('')}
+        </div>
+        <div>
+          <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
+            Continue <span class="ob-continue-arrow">→</span>
+          </button>
+        </div>`;
+    } else {
+      // monthly — pick date 1–28
+      const dates = Array.from({length:28},(_,i)=>i+1);
+      html = `
+        <div class="ob-eyebrow">Step 4 of ${total}</div>
+        <div class="ob-q">Which day of the month?</div>
+        <div class="ob-hint">Pick the date you'd like to pray each month.</div>
+        <div class="ob-chips" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
+          ${dates.map(d => `
+            <button class="ob-chip ${OB.days.includes(d)?'selected':''}"
+                    style="padding:9px 0;text-align:center"
+                    onclick="obToggleDay(${d})">${d}</button>`).join('')}
+        </div>
+        <div>
+          <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
+            Continue <span class="ob-continue-arrow">→</span>
+          </button>
+        </div>`;
+    }
+  }
+  else if (stepId === 'time') {
+    const hours = [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22];
+    html = `
+      <div class="ob-eyebrow">Step ${total} of ${total}</div>
+      <div class="ob-q">When is a good time<br>to spend in prayer?</div>
+      <div class="ob-hint">Pick the hour that works best. You can always sign up for other slots too.</div>
+      <div class="ob-time-grid">
+        ${hours.map(h => {
+          const label = h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h-12} PM`;
+          const sel   = OB.hour === h;
+          return `<button class="ob-chip ${sel?'selected':''}"
+                          style="text-align:center;padding:10px 6px"
+                          onclick="OB.hour=${h};obRender()">${label}</button>`;
+        }).join('')}
+      </div>
+      <div>
+        <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
+          ${OB.hour !== null ? "Let's go →" : 'Continue →'}
+        </button>
+        ${OB.hour === null ? `<span class="ob-enter-hint">or pick a time above</span>` : ''}
+      </div>`;
+  }
+  else if (stepId === 'done') {
+    const freqLabel = {daily:'Every day',weekly:'Every week',monthly:'Every month'}[OB.frequency] || '';
+    const timeLabel = OB.hour !== null ? fmtTime(OB.hour, 0) : '';
+    let dayLabel = '';
+    if (OB.frequency === 'weekly' && OB.days.length > 0) {
+      dayLabel = OB.days.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ');
+    } else if (OB.frequency === 'monthly' && OB.days.length > 0) {
+      dayLabel = OB.days.map(d=>`${d}${ordinal(d)}`).join(', ') + ' of the month';
+    }
+    html = `
+      <div class="ob-done-icon">🙏</div>
+      <div class="ob-q ob-done-q">You're all set${OB.name ? `, <em>${OB.name}</em>` : ''}.</div>
+      <div class="ob-done-sub">Your prayer slots are ready on the calendar. Thank you for committing time to pray for Grants Pass.</div>
+      <div class="ob-summary">
+        ${OB.name   ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${OB.name}</div>` : ''}
+        ${freqLabel ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${freqLabel}</div>` : ''}
+        ${dayLabel  ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${dayLabel}</div>` : ''}
+        ${timeLabel ? `<div class="ob-summary-row"><div class="ob-summary-dot"></div>${timeLabel}</div>` : ''}
+      </div>
+      <button class="ob-continue" onclick="obFinish()">
+        Open my calendar <span class="ob-continue-arrow">→</span>
+      </button>`;
+  }
+
+  const wrap = document.getElementById('ob-step');
+  wrap.innerHTML = `<div class="ob-step-inner">${html}</div>`;
+
+  // auto-focus inputs
+  setTimeout(() => {
+    const inp = wrap.querySelector('.ob-input');
+    if (inp) inp.focus();
+  }, 60);
+}
+
+function obToggleDay(val) {
+  const i = OB.days.indexOf(val);
+  if (i === -1) OB.days.push(val);
+  else OB.days.splice(i, 1);
+  obRender();
+}
+
+function obNext() {
+  if (OB.transitioning) return;
+
+  const steps  = obSteps();
+  const stepId = steps[OB.step];
+
+  // validation
+  if (stepId === 'name') {
+    const v = document.getElementById('ob-name-inp')?.value.trim();
+    if (!v) { document.getElementById('ob-name-inp').style.borderBottomColor='#c44'; return; }
+    OB.name = v;
+  }
+  if (stepId === 'email') {
+    OB.email = document.getElementById('ob-email-inp')?.value.trim() || '';
+  }
+  if (stepId === 'frequency' && !OB.frequency) return;
+  if (stepId === 'day' && OB.days.length === 0) {
+    // allow continuing without selection
+  }
+  if (stepId === 'time' && OB.hour === null) {
+    // pick a default
+    OB.hour = 7;
+  }
+
+  // advance
+  OB.transitioning = true;
+  const inner = document.querySelector('.ob-step-inner');
+  if (inner) inner.classList.add('ob-exit-step');
+
+  setTimeout(() => {
+    OB.step++;
+    OB.transitioning = false;
+    // recalc steps after frequency change
+    obRender();
+  }, 200);
+}
+
+function obSkip() { obFinish(); }
+
+function obFinish() {
+  // persist name
+  if (OB.name) {
+    localStorage.setItem('pfgp_name', OB.name);
+    S.userName = OB.name;
+  }
+
+  // auto-create slots based on preferences
+  if (OB.hour !== null && OB.name) {
+    const today   = new Date();
+    const slots   = [];
+
+    if (OB.frequency === 'daily') {
+      // next 30 days
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        slots.push(slotKey(d, OB.hour, 0));
+      }
+    } else if (OB.frequency === 'weekly' && OB.days.length > 0) {
+      // next 8 weeks, on chosen days
+      for (let i = 0; i < 56; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        if (OB.days.includes(d.getDay())) slots.push(slotKey(d, OB.hour, 0));
+      }
+    } else if (OB.frequency === 'monthly' && OB.days.length > 0) {
+      // next 4 months, on chosen dates
+      for (let m = 0; m < 4; m++) {
+        OB.days.forEach(dom => {
+          const d = new Date(today.getFullYear(), today.getMonth() + m, dom);
+          if (d >= today && d.getDate() === dom)
+            slots.push(slotKey(d, OB.hour, 0));
+        });
+      }
+    } else if (OB.hour !== null) {
+      // no frequency chosen — just sign up today
+      slots.push(slotKey(today, OB.hour, 0));
+    }
+
+    // add without duplicating
+    const existing = new Set(S.slots.filter(s=>s.name===OB.name).map(s=>s.key));
+    slots.forEach(k => { if (!existing.has(k)) S.slots.push({ key: k, name: OB.name }); });
+    saveSlots();
+  }
+
+  // mark onboarded
+  localStorage.setItem('pfgp_onboarded', '1');
+
+  // fade out overlay
+  const ov = document.getElementById('ob-overlay');
+  ov.classList.add('ob-exit');
+  setTimeout(() => { ov.style.display = 'none'; render(); }, 500);
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return s[(v-20)%10]||s[v]||s[0];
+}
+
+// keyboard nav for onboarding
+document.addEventListener('keydown', function obKey(e) {
+  const ov = document.getElementById('ob-overlay');
+  if (!ov || ov.style.display === 'none') return;
+  if (e.key === 'Enter') {
+    const steps  = obSteps();
+    const stepId = steps[OB.step];
+    // don't auto-advance on option/chip screens
+    if (['name','email','time'].includes(stepId)) obNext();
+  }
+});
+
 // ── CONSTANTS ──────────────────────────────────────────────────────────
 const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAYS_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1412,11 +2067,17 @@ document.addEventListener('keydown', e => {
 });
 
 // ── INIT ────────────────────────────────────────────────────────────────
-if (!S.userName) {
-  document.getElementById('name-banner').style.display = 'flex';
-}
+const alreadyOnboarded = localStorage.getItem('pfgp_onboarded');
 
-render();
+if (alreadyOnboarded) {
+  // returning user — hide overlay immediately, show app
+  document.getElementById('ob-overlay').style.display = 'none';
+  render();
+} else {
+  // new user — show onboarding, render app in background
+  obRender();
+  render();
+}
 </script>
 </body>
 </html>
