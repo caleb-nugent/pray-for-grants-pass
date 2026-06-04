@@ -75,6 +75,10 @@
     .logo h1 em { font-style: italic; color: var(--black); }
 
     .divider { width: 1px; height: 20px; background: var(--gray-300); }
+    .topbar.cal-hidden .divider,
+    .topbar.cal-hidden .month-nav,
+    .topbar.cal-hidden .today-btn,
+    .topbar.cal-hidden .view-tabs { display: none; }
 
     /* Month + nav */
     .month-nav {
@@ -2465,6 +2469,7 @@ function render() {
 
   ['day','week','month'].forEach(v =>
     document.getElementById('vt-'+v).classList.toggle('active', S.view===v));
+  document.querySelector('.topbar')?.classList.toggle('cal-hidden', S.page !== 'calendar');
   ['calendar','mine','admin'].forEach(p =>
     document.getElementById('pt-'+p).classList.toggle('active', S.page===p));
   // bottom nav (mobile)
