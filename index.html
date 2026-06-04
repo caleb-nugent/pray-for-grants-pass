@@ -1607,7 +1607,6 @@
       <div class="page-tabs">
         <button class="page-tab active" id="pt-calendar" onclick="setPage('calendar')">Calendar</button>
         <button class="page-tab" id="pt-mine" onclick="setPage('mine')">My Slots</button>
-        <button class="page-tab" id="pt-admin" onclick="setPage('admin')">Admin</button>
       </div>
       <button class="user-btn" id="user-btn" onclick="toggleUserMenu()">
         <div class="user-avatar" id="user-avatar">?</div>
@@ -1634,9 +1633,6 @@
     </button>
     <button class="bn-item" id="bn-mine" onclick="setPage('mine')">
       <span class="bn-icon">🙏</span>My Slots
-    </button>
-    <button class="bn-item" id="bn-admin" onclick="setPage('admin')">
-      <span class="bn-icon">⚙</span>Admin
     </button>
   </nav>
 
@@ -2459,10 +2455,10 @@ function render() {
   ['day','week','month'].forEach(v =>
     document.getElementById('vt-'+v).classList.toggle('active', S.view===v));
   document.querySelector('.topbar')?.classList.toggle('cal-hidden', S.page !== 'calendar');
-  ['calendar','mine','admin'].forEach(p =>
+  ['calendar','mine'].forEach(p =>
     document.getElementById('pt-'+p).classList.toggle('active', S.page===p));
   // bottom nav (mobile)
-  ['calendar','mine','admin'].forEach(p => {
+  ['calendar','mine'].forEach(p => {
     const el = document.getElementById('bn-'+p);
     if (el) el.classList.toggle('active', S.page===p);
   });
