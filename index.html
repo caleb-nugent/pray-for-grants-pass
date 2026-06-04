@@ -1069,12 +1069,7 @@
       color: white;
     }
 
-    .ob-time-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 8px;
-    }
+    /* ob-time-grid removed — replaced by ts-* slider */
 
     /* toggle / consent */
     .ob-consent {
@@ -1137,6 +1132,127 @@
       background: var(--black);
       border-radius: 50%;
       flex-shrink: 0;
+    }
+
+    /* ── TIME SLIDER ── */
+    .ts-wrap { margin-bottom: 8px; }
+
+    .ts-selected-time {
+      font-family: 'Instrument Serif', serif;
+      font-size: 48px;
+      font-weight: 400;
+      text-align: center;
+      color: var(--black);
+      margin-bottom: 18px;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .ts-container {
+      position: relative;
+      width: 100%;
+      height: 80px;
+      overflow: hidden;
+      background: #141414;
+      border-radius: 12px;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: pan-y;
+    }
+    .ts-container:active { cursor: grabbing; }
+
+    .ts-track {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      display: flex;
+      align-items: stretch;
+      will-change: transform;
+    }
+
+    .ts-slot {
+      flex-shrink: 0;
+      width: 60px;
+      position: relative;
+    }
+    .ts-tick-line {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      width: 1px;
+      background: rgba(255,255,255,0.22);
+      height: 10px;
+    }
+    .ts-slot.major .ts-tick-line {
+      height: 22px;
+      background: rgba(255,255,255,0.55);
+    }
+    .ts-slot.half .ts-tick-line {
+      height: 15px;
+      background: rgba(255,255,255,0.32);
+    }
+    .ts-time-label {
+      position: absolute;
+      top: 14px;
+      left: 0;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      white-space: nowrap;
+      letter-spacing: 0.4px;
+      pointer-events: none;
+    }
+
+    /* fixed selection window */
+    .ts-window {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 1.5px solid rgba(255,255,255,0.85);
+      border-radius: 6px;
+      pointer-events: none;
+      background: rgba(255,255,255,0.07);
+    }
+    .ts-center-line {
+      position: absolute;
+      top: 10px; bottom: 10px;
+      left: 50%;
+      width: 1.5px;
+      background: white;
+      transform: translateX(-50%);
+      border-radius: 1px;
+      opacity: 0.9;
+    }
+
+    /* subtle gradient fade on edges */
+    .ts-container::before,
+    .ts-container::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 60px;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .ts-container::before {
+      left: 0;
+      background: linear-gradient(to right, #141414, transparent);
+    }
+    .ts-container::after {
+      right: 0;
+      background: linear-gradient(to left, #141414, transparent);
+    }
+
+    .ts-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--gray-500);
+      margin-top: 10px;
+      letter-spacing: 0.3px;
     }
   </style>
 </head>
@@ -1371,22 +1487,22 @@ function generateSlotKeys(ob) {
   if (ob.frequency === 'daily') {
     for (let i = 0; i < 30; i++) {
       const d = new Date(today); d.setDate(today.getDate() + i);
-      keys.push(slotKey(d, ob.hour, 0));
+      keys.push(slotKey(d, ob.hour, ob.min||0));
     }
   } else if (ob.frequency === 'weekly' && ob.days.length > 0) {
     for (let i = 0; i < 56; i++) {
       const d = new Date(today); d.setDate(today.getDate() + i);
-      if (ob.days.includes(d.getDay())) keys.push(slotKey(d, ob.hour, 0));
+      if (ob.days.includes(d.getDay())) keys.push(slotKey(d, ob.hour, ob.min||0));
     }
   } else if (ob.frequency === 'monthly' && ob.days.length > 0) {
     for (let m = 0; m < 4; m++) {
       ob.days.forEach(dom => {
         const d = new Date(today.getFullYear(), today.getMonth() + m, dom);
-        if (d >= today && d.getDate() === dom) keys.push(slotKey(d, ob.hour, 0));
+        if (d >= today && d.getDate() === dom) keys.push(slotKey(d, ob.hour, ob.min||0));
       });
     }
   } else if (ob.hour !== null) {
-    keys.push(slotKey(today, ob.hour, 0));
+    keys.push(slotKey(today, ob.hour, ob.min||0));
   }
   return keys;
 }
@@ -1457,7 +1573,7 @@ async function doSignOut() {
 // ══════════════════════════════════════════════════════════════════════
 const OB = {
   step: 0, mode: 'onboard',
-  name: '', email: '', password: '',
+  name: '', email: '', password: '', min: 0,
   emailConsent: true, frequency: '',
   days: [], hour: null,
   transitioning: false, error: '', loading: false,
@@ -1669,22 +1785,27 @@ function obRender() {
     }
   }
   else if (stepId === 'time') {
-    const hours = [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22];
+    const initHour = OB.hour ?? 7;
     html = `
       <div class="ob-eyebrow">Step ${total} of ${total}</div>
       <div class="ob-q">When is a good time<br>to spend in prayer?</div>
-      <div class="ob-hint">Pick the hour that works best — you can always add more later.</div>
-      <div class="ob-time-grid">
-        ${hours.map(h => {
-          const label = h<12 ? `${h} AM` : h===12 ? '12 PM' : `${h-12} PM`;
-          return `<button class="ob-chip ${OB.hour===h?'selected':''}"
-                          style="text-align:center;padding:10px 6px"
-                          onclick="OB.hour=${h};obRender()">${label}</button>`;
-        }).join('')}
+      <div class="ob-hint">Drag to choose your preferred time.</div>
+      <div class="ts-wrap">
+        <div class="ts-selected-time" id="ts-label">${fmtTime(initHour, OB.min??0)}</div>
+        <div class="ts-container" id="ts-container"
+             onmousedown="tsDown(event)" ontouchstart="tsDown(event)"
+             onmousemove="tsMove(event)" ontouchmove="tsMove(event)"
+             onmouseup="tsUp()"         ontouchend="tsUp()"
+             onmouseleave="tsUp()">
+          <div class="ts-track" id="ts-track"></div>
+          <div class="ts-window"><div class="ts-center-line"></div></div>
+        </div>
+        <div class="ts-hint">← drag →</div>
       </div>
-      <button class="ob-continue" onclick="obNext()" style="margin-top:20px">
-        ${OB.hour!==null ? "Let's go" : 'Continue'} <span class="ob-continue-arrow">→</span>
+      <button class="ob-continue" onclick="obNext()" style="margin-top:24px">
+        Let's go <span class="ob-continue-arrow">→</span>
       </button>`;
+    setTimeout(() => tsInit(initHour, OB.min??0), 30);
   }
   else if (stepId === 'done') {
     const freqLabel = {daily:'Every day',weekly:'Every week',monthly:'Every month'}[OB.frequency]||'';
@@ -1745,7 +1866,6 @@ function obNext() {
     OB.email = e; OB.password = p;
   }
   if (stepId === 'frequency' && !OB.frequency) return;
-  if (stepId === 'time' && OB.hour===null) OB.hour = 7;
 
   OB.transitioning = true;
   document.querySelector('.ob-step-inner')?.classList.add('ob-exit-step');
@@ -2231,12 +2351,105 @@ document.addEventListener('keydown', e=>{
   if (e.key==='Escape')     closeModal();
 });
 
+// ── TIME SLIDER ──────────────────────────────────────────────────────
+const TS = {
+  SLOT_PX: 60,
+  START_H: 5,
+  END_H:   22,   // last hour on slider
+  dragging: false,
+  startX: 0,
+  startOffset: 0,
+  offset: 0,
+};
+
+function tsOffsetFor(hour, min) {
+  const c = document.getElementById('ts-container');
+  if (!c) return 0;
+  const slotIdx = (hour - TS.START_H) * 4 + Math.round((min||0) / 15);
+  return c.offsetWidth / 2 - slotIdx * TS.SLOT_PX - TS.SLOT_PX / 2;
+}
+
+function tsClamp(offset) {
+  const c = document.getElementById('ts-container');
+  if (!c) return offset;
+  const totalSlots = (TS.END_H - TS.START_H) * 4;
+  const min = c.offsetWidth / 2 - totalSlots * TS.SLOT_PX - TS.SLOT_PX / 2;
+  const max = c.offsetWidth / 2 - TS.SLOT_PX / 2;
+  return Math.max(min, Math.min(max, offset));
+}
+
+function tsApply(offset, animate) {
+  const track = document.getElementById('ts-track');
+  const c = document.getElementById('ts-container');
+  if (!track || !c) return;
+  offset = tsClamp(offset);
+  TS.offset = offset;
+  track.style.transition = animate ? 'transform 0.18s ease-out' : 'none';
+  track.style.transform = `translateX(${offset}px)`;
+  // derive time
+  const rawSlot = (c.offsetWidth / 2 - offset - TS.SLOT_PX / 2) / TS.SLOT_PX;
+  const totalSlots = (TS.END_H - TS.START_H) * 4;
+  const slot = Math.max(0, Math.min(totalSlots, Math.round(rawSlot)));
+  const totalMin = TS.START_H * 60 + slot * 15;
+  const h = Math.floor(totalMin / 60), m = totalMin % 60;
+  OB.hour = h; OB.min = m;
+  const lbl = document.getElementById('ts-label');
+  if (lbl) lbl.textContent = fmtTime(h, m);
+}
+
+function tsInit(hour, min) {
+  const track = document.getElementById('ts-track');
+  const c = document.getElementById('ts-container');
+  if (!track || !c) return;
+  let inner = '';
+  for (let h = TS.START_H; h <= TS.END_H; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const isMajor = m === 0, isHalf = m === 30;
+      const cls = isMajor ? 'ts-slot major' : isHalf ? 'ts-slot half' : 'ts-slot';
+      const label = isMajor
+        ? `<div class="ts-time-label">${fmtTime(h,0).replace(':00 ',' ')}</div>` : '';
+      inner += `<div class="${cls}">${label}<div class="ts-tick-line"></div></div>`;
+    }
+  }
+  inner += `<div class="ts-slot"></div>`;
+  track.innerHTML = inner;
+  tsApply(tsOffsetFor(hour??7, min??0), false);
+}
+
+function tsDown(e) {
+  TS.dragging = true;
+  TS.startX = e.touches ? e.touches[0].clientX : e.clientX;
+  TS.startOffset = TS.offset;
+  const track = document.getElementById('ts-track');
+  if (track) track.style.transition = 'none';
+}
+
+function tsMove(e) {
+  if (!TS.dragging) return;
+  e.preventDefault();
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  tsApply(TS.startOffset + (x - TS.startX), false);
+}
+
+function tsUp() {
+  if (!TS.dragging) return;
+  TS.dragging = false;
+  // snap to nearest slot
+  const c = document.getElementById('ts-container');
+  if (!c) return;
+  const rawSlot = (c.offsetWidth / 2 - TS.offset - TS.SLOT_PX / 2) / TS.SLOT_PX;
+  const snapped = Math.round(rawSlot);
+  const snappedOffset = c.offsetWidth / 2 - snapped * TS.SLOT_PX - TS.SLOT_PX / 2;
+  tsApply(snappedOffset, true);
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // WINDOW EXPORTS  (needed for inline onclick in rendered HTML)
 // ══════════════════════════════════════════════════════════════════════
 Object.assign(window, {
   navigate, goToday, switchView, setPage, selectDay,
   obNext, obSkip, obFinish, obSignIn, obSendLink, obResend, obToggleDay, obRender,
+  tsDown, tsMove, tsUp, tsInit, TS,
   openSlot, closeModal, doSignUp, removeSlotFromDb,
   toggleUserMenu, doSignOut, checkAdmin,
   S, OB,
