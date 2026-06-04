@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pray for GP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #2d6a4f;
+      --green-light: #e8f5ee;
+      --green-mid: #74c69d;
+      --green-line: #52b788;
+      --black: #111111;
+      --gray-700: #555555;
+      --gray-500: #999999;
+      --gray-300: #e0e0e0;
+      --gray-100: #f8f8f6;
+      --white: #ffffff;
+      --bg: #f5f7f5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Proxima Nova', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--black);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; }
+
+    /* ── APP SHELL ── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-300);
+      flex-shrink: 0;
+      gap: 16px;
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 20px; }
+
+    .logo {
+      display: flex; align-items: center; gap: 9px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: var(--green);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 13px; flex-shrink: 0;
+    }
+    .logo h1 {
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--black);
+      white-space: nowrap;
+    }
+    .logo h1 em { font-style: italic; color: var(--green); }
+
+    .divider { width: 1px; height: 20px; background: var(--gray-300); }
+
+    /* Month + nav */
+    .month-nav {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .month-label {
+      font-family: 'Fraunces', serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.3px;
+      color: var(--black);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      user-select: none;
+    }
+    .month-label svg { opacity: 0.4; }
+    .nav-btn {
+      width: 26px; height: 26px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gray-500);
+      font-size: 14px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-btn:hover { background: var(--gray-100); color: var(--black); }
+
+    .today-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 5px;
+      background: none;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--gray-700);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .today-btn:hover { background: var(--gray-100); }
+
+    /* View tabs */
+    .view-tabs {
+      display: flex;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .view-tab {
+      padding: 5px 13px;
+      font-size: 12px;
+      font-family: inherit;
+      border: none;
+      background: none;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: all 0.12s;
+      letter-spacing: 0.2px;
+    }
+    .view-tab + .view-tab { border-left: 1px solid var(--gray-300); }
+    .view-tab.active { background: var(--black); color: var(--white); }
+    .view-tab:hover:not(.active) { background: var(--gray-100); color: var(--black); }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .page-tabs { display: flex; gap: 2px; }
+    .page-tab {
+      padding: 5px 13px;
+      border: none;
+      border-radius: 5px;
+      background: none;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .page-tab.active { background: var(--gray-100); color: var(--black); font-weight: 500; }
+    .page-tab:hover:not(.active) { color: var(--black); }
+
+    .user-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px 5px 8px;
+      border: 1px solid var(--gray-300);
+      border-radius: 20px;
+      background: none;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--black);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .user-btn:hover { background: var(--gray-100); }
+    .user-avatar {
+      width: 20px; height: 20px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 10px; font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* ── NAME BANNER ── */
+    .name-banner {
+      background: var(--green-light);
+      border-bottom: 1px solid #c5e8d4;
+      padding: 9px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+    .name-banner-form { display: flex; gap: 7px; align-items: center; }
+    .name-banner input {
+      padding: 5px 10px;
+      border: 1px solid #b7dfc8;
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      background: white;
+      width: 180px;
+    }
+    .name-banner input:focus { border-color: var(--green); }
+    .name-banner button {
+      padding: 5px 13px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* ── CONTENT AREA ── */
+    .content {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* ── MONTH CALENDAR ── */
+    .cal-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .dow-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 0;
+      border-bottom: 1px solid var(--gray-300);
+      flex-shrink: 0;
+    }
+    .dow-cell {
+      padding: 10px 16px 9px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .mcell {
+      border-right: 1px solid var(--gray-300);
+      border-bottom: 1px solid var(--gray-300);
+      padding: 12px 14px 10px;
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .mcell:nth-child(7n) { border-right: none; }
+    .mcell:hover { background: var(--gray-100); }
+    .mcell:hover .mday { color: var(--black); }
+
+    .mcell.other-month { background: #fcfcfc; }
+    .mcell.other-month .mday { color: var(--gray-300); }
+
+    .mcell.is-today { background: #f2fbf6; }
+    .mcell.is-selected {
+      outline: 2px solid var(--green);
+      outline-offset: -2px;
+      background: white;
+      z-index: 1;
+    }
+
+    .mday {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--gray-700);
+      line-height: 1;
+    }
+    .mcell.is-today .mday {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    /* Thin slot indicator lines */
+    .slot-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .slot-line {
+      height: 2px;
+      border-radius: 2px;
+      background: var(--green-mid);
+      opacity: 0.55;
+      flex-shrink: 0;
+    }
+    .slot-line.mine {
+      background: var(--green);
+      opacity: 1;
+    }
+    .slot-line-label {
+      font-size: 9px;
+      color: var(--gray-500);
+      letter-spacing: 0.2px;
+    }
+
+    /* ── WEEK VIEW ── */
+    .week-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--white);
+    }
+    .week-head-row {
+      display: grid;
+      grid-template-columns: 48px repeat(7, 1fr);
+      border-bottom: 1px solid var(--gray-300);
+      flex-shrink: 0;
+    }
+    .week-head-gutter { border-right: 1px solid var(--gray-300); }
+    .week-head-col {
+      padding: 10px 8px 9px;
+      border-right: 1px solid var(--gray-300);
+      text-align: center;
+      cursor: pointer;
+    }
+    .week-head-col:last-child { border-right: none; }
+    .wh-dow {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 3px;
+    }
+    .wh-num {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--gray-700);
+      font-family: 'Fraunces', serif;
+      line-height: 1;
+    }
+    .week-head-col.wh-today .wh-num { color: var(--green); font-weight: 400; }
+    .week-head-col.wh-selected .wh-num {
+      background: var(--black);
+      color: white;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      margin: 0 auto;
+    }
+
+    .week-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+    }
+    .wtime-col {
+      width: 48px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--gray-300);
+    }
+    .wtime-label {
+      height: 28px;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 9px;
+      color: var(--gray-500);
+      letter-spacing: 0.2px;
+    }
+    .wtime-label.hl { color: var(--gray-700); font-weight: 500; }
+
+    .wday-cols {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .wday-col { border-right: 1px solid var(--gray-300); }
+    .wday-col:last-child { border-right: none; }
+
+    .wslot {
+      height: 28px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex; align-items: center;
+      padding: 0 5px;
+      gap: 3px;
+    }
+    .wslot:hover { background: var(--gray-100); }
+    .wslot.wslot-hour { border-bottom-color: var(--gray-300); }
+    .wslot.wslot-mine { background: var(--green-light); }
+    .wslot.wslot-mine:hover { background: #d6eddf; }
+    .wslot-dot {
+      width: 5px; height: 5px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .wslot-count {
+      font-size: 9px;
+      color: var(--gray-500);
+    }
+
+    /* ── DAY VIEW ── */
+    .day-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--white);
+    }
+    .day-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--gray-300);
+      flex-shrink: 0;
+    }
+    .day-header h2 {
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--black);
+    }
+    .day-header h2 em { font-style: normal; color: var(--green); }
+    .day-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+    }
+    .dtime-col {
+      width: 64px;
+      flex-shrink: 0;
+    }
+    .dtime-label {
+      height: 28px;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-right: 12px;
+      font-size: 10px;
+      color: var(--gray-500);
+    }
+    .dtime-label.hl { color: var(--gray-700); font-weight: 500; }
+    .dslots-col {
+      flex: 1;
+      border-left: 1px solid var(--gray-300);
+    }
+    .dslot {
+      height: 28px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex; align-items: center;
+      padding: 0 12px;
+      gap: 6px;
+    }
+    .dslot:hover { background: var(--gray-100); }
+    .dslot.dslot-hour { border-bottom-color: var(--gray-300); }
+    .dslot.dslot-mine { background: var(--green-light); }
+    .dslot.dslot-mine:hover { background: #d6eddf; }
+    .dslot-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dslot-count {
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+
+    /* ── DETAIL PANEL ── */
+    .detail-panel {
+      width: 280px;
+      flex-shrink: 0;
+      border-left: 1px solid var(--gray-300);
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-header {
+      padding: 28px 24px 16px;
+      border-bottom: 1px solid var(--gray-300);
+      flex-shrink: 0;
+    }
+    .detail-day-num {
+      font-family: 'Fraunces', serif;
+      font-size: 52px;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--black);
+      margin-bottom: 2px;
+    }
+    .detail-day-num em { font-style: italic; color: var(--green); }
+    .detail-month {
+      font-size: 13px;
+      color: var(--gray-500);
+      letter-spacing: 0.2px;
+    }
+
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .detail-section-label {
+      padding: 16px 24px 8px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .detail-slot {
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.1s;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .detail-slot:hover { background: var(--gray-100); }
+    .detail-slot.ds-mine { background: var(--green-light); }
+    .detail-slot.ds-mine:hover { background: #d6eddf; }
+
+    .ds-time {
+      font-size: 13px;
+      color: var(--black);
+      letter-spacing: 0.1px;
+    }
+    .ds-time-end {
+      font-size: 11px;
+      color: var(--gray-500);
+      margin-top: 1px;
+    }
+    .ds-right {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ds-count {
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+    .ds-mine-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    .detail-empty {
+      padding: 32px 24px;
+      font-size: 12px;
+      color: var(--gray-400, #aaa);
+      line-height: 1.6;
+    }
+
+    /* Show all / collapse */
+    .detail-show-more {
+      padding: 10px 24px;
+      font-size: 11px;
+      color: var(--green);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+    }
+    .detail-show-more:hover { text-decoration: underline; }
+
+    /* ── MODAL ── */
+    .backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.25);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    .backdrop.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: white;
+      border-radius: 14px;
+      padding: 32px;
+      width: 400px;
+      max-width: 92vw;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.12);
+      transform: translateY(6px) scale(0.99);
+      transition: transform 0.18s;
+    }
+    .backdrop.open .modal { transform: none; }
+
+    .modal-eyebrow {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .modal h2 {
+      font-size: 22px;
+      font-weight: 300;
+      margin-bottom: 3px;
+    }
+    .modal-subline {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-bottom: 22px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .modal-subline::before {
+      content: '';
+      display: block;
+      width: 5px; height: 5px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .modal input[type="text"] {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .modal input[type="text"]:focus { border-color: var(--green); }
+
+    .modal-attendees {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: var(--gray-100);
+      border-radius: 8px;
+    }
+    .modal-attendees-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .attendee {
+      font-size: 12px;
+      color: var(--gray-700);
+      padding: 3px 0;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .attendee::before {
+      content: '';
+      width: 4px; height: 4px;
+      background: var(--green-mid);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .modal-actions {
+      display: flex; gap: 8px; margin-top: 22px;
+    }
+    .btn {
+      flex: 1; padding: 10px 16px;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-family: inherit; font-weight: 500;
+      cursor: pointer; transition: all 0.14s;
+    }
+    .btn-primary { background: var(--green); color: white; }
+    .btn-primary:hover { background: #245c43; }
+    .btn-ghost { background: var(--gray-100); color: var(--gray-700); }
+    .btn-ghost:hover { background: var(--gray-300); }
+    .btn-danger { background: #fff0f0; color: #c44; }
+    .btn-danger:hover { background: #ffe0e0; }
+
+    /* ── OTHER PAGES ── */
+    .page-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 48px;
+    }
+    .page-content h2 {
+      font-size: 24px;
+      font-weight: 300;
+      margin-bottom: 6px;
+    }
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-bottom: 32px;
+    }
+
+    .slot-list-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .slr-label { font-size: 14px; }
+    .slr-sub { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+    .empty-page {
+      text-align: center;
+      padding: 80px 24px;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 14px; }
+    .empty-page h2 { font-size: 20px; font-weight: 300; margin-bottom: 8px; }
+    .empty-page p { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+
+    .green-btn {
+      padding: 9px 22px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* Admin */
+    .admin-section { margin-bottom: 32px; }
+    .admin-date-head {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--black);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--gray-300);
+      margin-bottom: 10px;
+      font-family: 'Fraunces', serif;
+    }
+    .admin-slot-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 7px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .asr-time { width: 90px; font-size: 12px; color: var(--gray-700); flex-shrink: 0; }
+    .asr-names { display: flex; flex-wrap: wrap; gap: 4px; }
+    .asr-name {
+      font-size: 11px;
+      padding: 2px 9px;
+      border-radius: 20px;
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    .admin-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 8px;
+      background: #fef9e7;
+      color: #8a6c00;
+      border-radius: 10px;
+      font-weight: 500;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <div class="logo-mark">✦</div>
+        <h1>Pray for <em>GP</em></h1>
+      </div>
+      <div class="divider"></div>
+      <div class="month-nav">
+        <button class="nav-btn" onclick="navigate(-1)">&#8249;</button>
+        <span class="month-label" id="month-label">June 2026
+          <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </span>
+        <button class="nav-btn" onclick="navigate(1)">&#8250;</button>
+      </div>
+      <button class="today-btn" onclick="goToday()">Today</button>
+      <div class="view-tabs">
+        <button class="view-tab" id="vt-day" onclick="switchView('day')">Day</button>
+        <button class="view-tab active" id="vt-week" onclick="switchView('week')">Week</button>
+        <button class="view-tab" id="vt-month" onclick="switchView('month')">Month</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="page-tabs">
+        <button class="page-tab active" id="pt-calendar" onclick="setPage('calendar')">Calendar</button>
+        <button class="page-tab" id="pt-mine" onclick="setPage('mine')">My Slots</button>
+        <button class="page-tab" id="pt-admin" onclick="setPage('admin')">Admin</button>
+      </div>
+      <button class="user-btn" onclick="promptName()">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <span id="user-label">Set name</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- NAME BANNER -->
+  <div class="name-banner" id="name-banner" style="display:none">
+    <span>Enter your name to sign up for prayer slots</span>
+    <div class="name-banner-form">
+      <input type="text" id="name-input" placeholder="Your name" />
+      <button onclick="saveName()">Save</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content"></div>
+</div>
+
+<!-- MODAL -->
+<div class="backdrop" id="backdrop" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-eyebrow" id="m-eyebrow">Prayer Slot</div>
+    <h2 id="m-title">Sign Up to Pray</h2>
+    <div class="modal-subline" id="m-sub"></div>
+    <div id="m-body"></div>
+    <div class="modal-actions" id="m-actions"></div>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────────────────────
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS     = ['January','February','March','April','May','June','July',
+                    'August','September','October','November','December'];
+
+// 15-min slots 5am–11pm
+const ALL_SLOTS = (() => {
+  const s = [];
+  for (let h = 5; h < 23; h++)
+    for (let m = 0; m < 60; m += 15)
+      s.push({ hour: h, min: m });
+  return s;
+})();
+
+// ── STATE ──────────────────────────────────────────────────────────────
+const S = {
+  view:      'month',
+  page:      'calendar',
+  cursor:    new Date(),
+  selected:  new Date(),
+  userName:  localStorage.getItem('pfgp_name') || '',
+  slots:     JSON.parse(localStorage.getItem('pfgp_slots') || '[]'),
+  adminUnlocked: false,
+  showAllDetail: false,
+};
+
+// ── HELPERS ────────────────────────────────────────────────────────────
+const pad  = n => String(n).padStart(2,'0');
+const same = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const isToday = d => same(d, new Date());
+
+function saveSlots() { localStorage.setItem('pfgp_slots', JSON.stringify(S.slots)); }
+
+function slotKey(date, h, m) {
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}-${pad(h)}-${pad(m)}`;
+}
+
+function parseKey(k) {
+  const [y,mo,d,h,mi] = k.split('-').map(Number);
+  return { year:y, month:mo-1, day:d, hour:h, min:mi };
+}
+
+function fmtTime(h, m) {
+  const ap = h >= 12 ? 'PM' : 'AM';
+  return `${h%12||12}:${pad(m)} ${ap}`;
+}
+
+function fmtDate(d) {
+  return `${DAYS_FULL[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function signupsFor(key) { return S.slots.filter(s => s.key === key); }
+
+function myKeys() {
+  if (!S.userName) return [];
+  return S.slots.filter(s => s.name === S.userName).map(s => s.key);
+}
+
+function weekDays(cursor) {
+  const dow = cursor.getDay();
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(cursor);
+    d.setDate(cursor.getDate() - dow + i);
+    return d;
+  });
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────
+function navigate(dir) {
+  const d = new Date(S.cursor);
+  if (S.view === 'day')   d.setDate(d.getDate() + dir);
+  else if (S.view === 'week') d.setDate(d.getDate() + dir * 7);
+  else d.setMonth(d.getMonth() + dir);
+  S.cursor = d;
+  render();
+}
+
+function goToday() {
+  S.cursor = S.selected = new Date();
+  render();
+}
+
+function switchView(v) {
+  S.view = v;
+  render();
+}
+
+function setPage(p) {
+  S.page = p;
+  render();
+}
+
+function selectDay(y, m, d) {
+  S.selected = new Date(y, m, d);
+  S.cursor   = new Date(y, m, d);
+  S.showAllDetail = false;
+  if (S.view === 'month') render(); else render();
+}
+
+// ── NAME ────────────────────────────────────────────────────────────────
+function promptName() {
+  const b = document.getElementById('name-banner');
+  const show = b.style.display === 'none' || b.style.display === '';
+  b.style.display = show ? 'flex' : 'none';
+  if (show) { document.getElementById('name-input').value = S.userName; document.getElementById('name-input').focus(); }
+}
+
+function saveName() {
+  const v = document.getElementById('name-input').value.trim();
+  if (!v) return;
+  S.userName = v;
+  localStorage.setItem('pfgp_name', v);
+  document.getElementById('name-banner').style.display = 'none';
+  render();
+}
+
+document.getElementById('name-input').addEventListener('keydown', e => { if(e.key==='Enter') saveName(); });
+
+// ── RENDER ──────────────────────────────────────────────────────────────
+function render() {
+  // header labels
+  const d = S.cursor;
+  let mlabel = '';
+  if (S.view === 'day') mlabel = `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  else if (S.view === 'week') {
+    const wd = weekDays(d);
+    const a = wd[0], b = wd[6];
+    mlabel = a.getMonth()===b.getMonth()
+      ? `${MONTHS[a.getMonth()]} ${a.getFullYear()}`
+      : `${MONTHS[a.getMonth()].slice(0,3)} – ${MONTHS[b.getMonth()].slice(0,3)} ${a.getFullYear()}`;
+  } else {
+    mlabel = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  document.getElementById('month-label').innerHTML = mlabel +
+    ` <svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`;
+
+  // user
+  const uname = S.userName || 'Set name';
+  document.getElementById('user-label').textContent = uname;
+  document.getElementById('user-avatar').textContent = S.userName ? S.userName[0].toUpperCase() : '?';
+
+  // view tabs
+  ['day','week','month'].forEach(v => {
+    document.getElementById('vt-'+v).classList.toggle('active', S.view === v);
+  });
+  ['calendar','mine','admin'].forEach(p => {
+    document.getElementById('pt-'+p).classList.toggle('active', S.page === p);
+  });
+
+  // content
+  const ct = document.getElementById('content');
+  if (S.page === 'admin')    { ct.innerHTML = renderAdmin(); return; }
+  if (S.page === 'mine')     { ct.innerHTML = renderMySlots(); return; }
+
+  // calendar + detail
+  let calHtml = '';
+  if (S.view === 'month')     calHtml = renderMonthCal();
+  else if (S.view === 'week') calHtml = renderWeekCal();
+  else                        calHtml = renderDayCal();
+
+  ct.innerHTML = calHtml + renderDetailPanel();
+
+  // scroll week/day to 7am
+  if (S.view !== 'month') {
+    const sc = ct.querySelector('.week-body, .day-body');
+    if (sc) sc.scrollTop = (7 - 5) * 4 * 28;
+  }
+}
+
+// ── MONTH CALENDAR ──────────────────────────────────────────────────────
+function renderMonthCal() {
+  const year = S.cursor.getFullYear(), month = S.cursor.getMonth();
+  const first = new Date(year, month, 1).getDay();
+  const dim   = new Date(year, month+1, 0).getDate();
+  const mk    = new Set(myKeys());
+
+  const dowRow = DAYS_SHORT.map(d =>
+    `<div class="dow-cell">${d}</div>`
+  ).join('');
+
+  let cells = '';
+
+  for (let i = 0; i < first; i++) {
+    const pd = new Date(year, month, -first+i+1);
+    cells += `<div class="mcell other-month" onclick="selectDay(${pd.getFullYear()},${pd.getMonth()},${pd.getDate()})">
+      <div class="mday">${pd.getDate()}</div></div>`;
+  }
+
+  for (let day = 1; day <= dim; day++) {
+    const date   = new Date(year, month, day);
+    const dStr   = `${year}-${pad(month+1)}-${pad(day)}`;
+    const isSel  = same(date, S.selected);
+    const daySlots = S.slots.filter(s => s.key.startsWith(dStr));
+    const uKeys  = [...new Set(daySlots.map(s => s.key))];
+
+    // Up to 5 indicator lines
+    const lines  = uKeys.slice(0,5).map(k =>
+      `<div class="slot-line ${mk.has(k)?'mine':''}"></div>`
+    ).join('');
+
+    cells += `
+      <div class="mcell${isToday(date)?' is-today':''}${isSel?' is-selected':''}"
+           onclick="selectDay(${year},${month},${day})">
+        <div class="mday">${day}</div>
+        <div class="slot-lines">${lines}</div>
+      </div>`;
+  }
+
+  const total = first + dim;
+  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) {
+    cells += `<div class="mcell other-month" onclick="selectDay(${year},${month+1},${i})">
+      <div class="mday">${i}</div></div>`;
+  }
+
+  return `
+    <div class="cal-wrap">
+      <div class="dow-row">${dowRow}</div>
+      <div class="month-grid">${cells}</div>
+    </div>`;
+}
+
+// ── WEEK CALENDAR ────────────────────────────────────────────────────────
+function renderWeekCal() {
+  const days = weekDays(S.cursor);
+  const mk   = new Set(myKeys());
+
+  const headCols = days.map(d => {
+    const isSel = same(d, S.selected);
+    const isTod = isToday(d);
+    const cls   = `week-head-col${isTod?' wh-today':''}${isSel?' wh-selected':''}`;
+    return `<div class="${cls}" onclick="selectDay(${d.getFullYear()},${d.getMonth()},${d.getDate()})">
+      <div class="wh-dow">${DAYS_SHORT[d.getDay()]}</div>
+      <div class="wh-num">${d.getDate()}</div>
+    </div>`;
+  }).join('');
+
+  const gutterRows = ALL_SLOTS.map(({hour,min}) =>
+    `<div class="wtime-label${min===0?' hl':''}">
+      ${min===0 ? fmtTime(hour,0).replace(':00 ',' ') : ''}
+    </div>`
+  ).join('');
+
+  let dayCols = '';
+  days.forEach(d => {
+    const rows = ALL_SLOTS.map(({hour,min}) => {
+      const k    = slotKey(d, hour, min);
+      const sups = signupsFor(k);
+      const mine = mk.has(k);
+      return `<div class="wslot${mine?' wslot-mine':''}${min===0?' wslot-hour':''}"
+                   onclick="openSlot('${k}')">
+        ${mine ? '<div class="wslot-dot"></div>' : ''}
+        ${sups.length > 0 && !mine ? `<div class="wslot-count">${sups.length}</div>` : ''}
+      </div>`;
+    }).join('');
+    dayCols += `<div class="wday-col">${rows}</div>`;
+  });
+
+  return `
+    <div class="week-wrap">
+      <div class="week-head-row">
+        <div class="week-head-gutter"></div>
+        ${headCols}
+      </div>
+      <div class="week-body">
+        <div class="wtime-col">${gutterRows}</div>
+        <div class="wday-cols">${dayCols}</div>
+      </div>
+    </div>`;
+}
+
+// ── DAY CALENDAR ────────────────────────────────────────────────────────
+function renderDayCal() {
+  const d  = S.cursor;
+  const mk = new Set(myKeys());
+
+  const gutter = ALL_SLOTS.map(({hour,min}) =>
+    `<div class="dtime-label${min===0?' hl':''}">
+      ${min===0 ? fmtTime(hour,0).replace(':00 ',' ') : ''}
+    </div>`
+  ).join('');
+
+  const slotRows = ALL_SLOTS.map(({hour,min}) => {
+    const k    = slotKey(d, hour, min);
+    const sups = signupsFor(k);
+    const mine = mk.has(k);
+    return `<div class="dslot${mine?' dslot-mine':''}${min===0?' dslot-hour':''}"
+                 onclick="openSlot('${k}')">
+      ${mine ? '<div class="dslot-dot"></div>' : ''}
+      ${sups.length > 0 ? `<div class="dslot-count">${sups.length} praying</div>` : ''}
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="day-wrap">
+      <div class="day-header">
+        <h2>${DAYS_FULL[d.getDay()]} <em>${d.getDate()}</em></h2>
+      </div>
+      <div class="day-body">
+        <div class="dtime-col">${gutter}</div>
+        <div class="dslots-col">${slotRows}</div>
+      </div>
+    </div>`;
+}
+
+// ── DETAIL PANEL ──────────────────────────────────────────────────────────
+function renderDetailPanel() {
+  const sel  = S.selected;
+  const dStr = `${sel.getFullYear()}-${pad(sel.getMonth()+1)}-${pad(sel.getDate())}`;
+  const mk   = new Set(myKeys());
+
+  // slots that have at least one signup, OR all slots for the day (show all)
+  const daySignupKeys = [...new Set(S.slots.filter(s => s.key.startsWith(dStr)).map(s => s.key))];
+
+  const dayNum = sel.getDate();
+  const isT    = isToday(sel);
+
+  let slotItems = '';
+  const LIMIT = 6;
+
+  if (daySignupKeys.length === 0) {
+    slotItems = `<div class="detail-empty">No slots signed up yet.<br>
+      ${S.userName ? 'Click any time to add yourself.' : 'Set your name to sign up.'}</div>`;
+  } else {
+    const shown = S.showAllDetail ? daySignupKeys : daySignupKeys.slice(0, LIMIT);
+    shown.sort().forEach(k => {
+      const p    = parseKey(k);
+      const sups = signupsFor(k);
+      const mine = mk.has(k);
+      slotItems += `
+        <div class="detail-slot${mine?' ds-mine':''}" onclick="openSlot('${k}')">
+          <div>
+            <div class="ds-time">${fmtTime(p.hour, p.min)}</div>
+            <div class="ds-time-end">${fmtTime(p.hour, p.min+15)}</div>
+          </div>
+          <div class="ds-right">
+            ${sups.length > 0 ? `<span class="ds-count">${sups.length}</span>` : ''}
+            ${mine ? '<div class="ds-mine-dot"></div>' : ''}
+          </div>
+        </div>`;
+    });
+    if (!S.showAllDetail && daySignupKeys.length > LIMIT) {
+      slotItems += `<button class="detail-show-more" onclick="S.showAllDetail=true;render()">
+        + ${daySignupKeys.length - LIMIT} more slots
+      </button>`;
+    }
+  }
+
+  return `
+    <div class="detail-panel">
+      <div class="detail-header">
+        <div class="detail-day-num">${isT ? `<em>${dayNum}</em>` : dayNum}</div>
+        <div class="detail-month">${MONTHS[sel.getMonth()]} · ${DAYS_FULL[sel.getDay()]}</div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-section-label">Prayer slots</div>
+        ${slotItems}
+      </div>
+    </div>`;
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+let pendingKey = null;
+
+function openSlot(key) {
+  pendingKey = key;
+  const p     = parseKey(key);
+  const date  = new Date(p.year, p.month, p.day);
+  const sups  = signupsFor(key);
+  const mine  = S.slots.some(s => s.key===key && s.name===S.userName);
+
+  document.getElementById('m-eyebrow').textContent = 'Prayer Slot';
+  document.getElementById('m-title').textContent   = mine ? "You’re signed up" : 'Sign up to pray';
+  document.getElementById('m-sub').textContent     =
+    `${fmtDate(date)} · ${fmtTime(p.hour, p.min)} – ${fmtTime(p.hour, p.min+15)}`;
+
+  let body = '';
+  if (!mine) {
+    body += `<label for="mn-input">Your Name</label>
+      <input type="text" id="mn-input" placeholder="Enter your name" value="${S.userName}" />`;
+  }
+  if (sups.length > 0) {
+    body += `<div class="modal-attendees" style="margin-top:${mine?'0':'14px'}">
+      <div class="modal-attendees-label">${sups.length} ${sups.length===1?'person':'people'} praying</div>
+      <div>${sups.map(s=>`<div class="attendee">${s.name}</div>`).join('')}</div>
+    </div>`;
+  }
+  document.getElementById('m-body').innerHTML = body;
+
+  let actions = '';
+  if (mine) {
+    actions = `<button class="btn btn-danger" onclick="removeSlot('${key}');closeModal()">Remove signup</button>
+               <button class="btn btn-ghost" onclick="closeModal()">Close</button>`;
+  } else {
+    actions = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+               <button class="btn btn-primary" onclick="signUp()">Sign me up</button>`;
+  }
+  document.getElementById('m-actions').innerHTML = actions;
+
+  document.getElementById('backdrop').classList.add('open');
+  if (!mine) setTimeout(() => document.getElementById('mn-input')?.focus(), 60);
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'backdrop') {
+    document.getElementById('backdrop').classList.remove('open');
+    pendingKey = null;
+  }
+}
+
+function signUp() {
+  const inp  = document.getElementById('mn-input');
+  const name = inp ? inp.value.trim() : S.userName;
+  if (!name) { if(inp) inp.style.borderColor='#c44'; return; }
+  if (name !== S.userName) {
+    S.userName = name;
+    localStorage.setItem('pfgp_name', name);
+  }
+  S.slots.push({ key: pendingKey, name });
+  saveSlots();
+  closeModal();
+  render();
+}
+
+function removeSlot(key) {
+  if (!S.userName) return;
+  S.slots = S.slots.filter(s => !(s.key===key && s.name===S.userName));
+  saveSlots();
+  render();
+}
+
+// ── MY SLOTS ────────────────────────────────────────────────────────────
+function renderMySlots() {
+  if (!S.userName) return `
+    <div class="page-content">
+      <div class="empty-page">
+        <div class="empty-icon">🙏</div>
+        <h2>Your Prayer Slots</h2>
+        <p>Set your name to view your scheduled prayer times.</p>
+        <button class="green-btn" onclick="promptName()">Set my name</button>
+      </div>
+    </div>`;
+
+  const mine = S.slots.filter(s=>s.name===S.userName).sort((a,b)=>a.key.localeCompare(b.key));
+
+  if (mine.length === 0) return `
+    <div class="page-content">
+      <div class="empty-page">
+        <div class="empty-icon">📅</div>
+        <h2>No slots yet</h2>
+        <p>Head to the calendar to sign up for a prayer time.</p>
+        <button class="green-btn" onclick="setPage('calendar')">Open calendar</button>
+      </div>
+    </div>`;
+
+  const rows = mine.map(s => {
+    const p    = parseKey(s.key);
+    const date = new Date(p.year, p.month, p.day);
+    return `<div class="slot-list-row">
+      <div>
+        <div class="slr-label">${fmtDate(date)}</div>
+        <div class="slr-sub">${fmtTime(p.hour,p.min)} – ${fmtTime(p.hour,p.min+15)}</div>
+      </div>
+      <button class="btn btn-danger" style="flex:none;padding:6px 14px;font-size:12px"
+              onclick="removeSlot('${s.key}')">Remove</button>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="page-content">
+      <h2>${S.userName}'s Prayer Slots</h2>
+      <p class="page-subtitle">${mine.length} scheduled</p>
+      ${rows}
+    </div>`;
+}
+
+// ── ADMIN ────────────────────────────────────────────────────────────────
+function renderAdmin() {
+  if (!S.adminUnlocked) return `
+    <div class="page-content" style="max-width:360px">
+      <div class="empty-page" style="padding-top:60px">
+        <div class="empty-icon">🔒</div>
+        <h2>Admin Access</h2>
+        <p>Enter the admin password to view all prayer slots.</p>
+        <input type="password" id="ap-input" placeholder="Password"
+          style="width:100%;padding:10px 13px;border:1px solid var(--gray-300);border-radius:8px;
+                 font-size:14px;font-family:inherit;margin-bottom:10px;outline:none"
+          onkeydown="if(event.key==='Enter')checkAdmin()" />
+        <button class="green-btn" style="width:100%;padding:10px" onclick="checkAdmin()">Enter</button>
+        <div id="ap-err" style="color:#c44;font-size:12px;margin-top:8px"></div>
+      </div>
+    </div>`;
+
+  const grouped = {};
+  S.slots.forEach(s => {
+    const p  = parseKey(s.key);
+    const dk = `${p.year}-${pad(p.month+1)}-${pad(p.day)}`;
+    if (!grouped[dk]) grouped[dk] = {};
+    if (!grouped[dk][s.key]) grouped[dk][s.key] = [];
+    grouped[dk][s.key].push(s.name);
+  });
+
+  const dks = Object.keys(grouped).sort();
+  if (dks.length === 0) return `
+    <div class="page-content">
+      <h2>All Prayer Slots <span class="admin-badge">Admin</span></h2>
+      <p class="page-subtitle">No slots yet.</p>
+    </div>`;
+
+  const sections = dks.map(dk => {
+    const [y,m,d] = dk.split('-').map(Number);
+    const date = new Date(y,m-1,d);
+    const rows = Object.entries(grouped[dk]).sort(([a],[b])=>a.localeCompare(b)).map(([key,names]) => {
+      const p = parseKey(key);
+      return `<div class="admin-slot-row">
+        <div class="asr-time">${fmtTime(p.hour,p.min)}</div>
+        <div class="asr-names">${names.map(n=>`<span class="asr-name">${n}</span>`).join('')}</div>
+      </div>`;
+    }).join('');
+    return `<div class="admin-section">
+      <div class="admin-date-head">${fmtDate(date)}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  const total  = S.slots.length;
+  const people = [...new Set(S.slots.map(s=>s.name))].length;
+
+  return `
+    <div class="page-content">
+      <h2>All Prayer Slots <span class="admin-badge">Admin</span></h2>
+      <p class="page-subtitle">${total} signups · ${people} people</p>
+      ${sections}
+    </div>`;
+}
+
+function checkAdmin() {
+  const v = document.getElementById('ap-input').value;
+  if (v === 'pray2025') { S.adminUnlocked = true; render(); }
+  else document.getElementById('ap-err').textContent = 'Incorrect password';
+}
+
+// ── KEYBOARD ────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if (e.key === 'ArrowLeft')  navigate(-1);
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 't')          goToday();
+  if (e.key === 'd')          switchView('day');
+  if (e.key === 'w')          switchView('week');
+  if (e.key === 'm')          switchView('month');
+  if (e.key === 'Escape')     closeModal();
+});
+
+// ── INIT ────────────────────────────────────────────────────────────────
+if (!S.userName) {
+  document.getElementById('name-banner').style.display = 'flex';
+}
+
+render();
+</script>
+</body>
+</html>
