@@ -1467,8 +1467,8 @@ const OB = {
 
 function obSteps() {
   return (OB.frequency === 'weekly' || OB.frequency === 'monthly')
-    ? ['name','email','frequency','day','time','done']
-    : ['name','email','frequency','time','done'];
+    ? ['name','frequency','day','time','auth','done']
+    : ['name','frequency','time','auth','done'];
 }
 function obTotalVisible() { return obSteps().length - 1; }
 
@@ -1588,10 +1588,10 @@ function obRender() {
         </button>
       </div>`;
   }
-  else if (stepId === 'email') {
+  else if (stepId === 'auth') {
     html = `
-      <div class="ob-eyebrow">Step 2 of ${total}</div>
-      <div class="ob-q">Create your account${OB.name?`, <em>${OB.name}</em>`:''}.</div>
+      <div class="ob-eyebrow">Almost there</div>
+      <div class="ob-q">Last step${OB.name?`, <em>${OB.name}</em>`:''}.<br>Create your account.</div>
       <div class="ob-hint">You'll use this to sign in from any device.</div>
       <div class="ob-input-wrap" style="margin-bottom:18px">
         <input class="ob-input" id="ob-email-inp" type="email"
@@ -1739,7 +1739,7 @@ function obNext() {
     if (!v) { document.getElementById('ob-name-inp').style.borderBottomColor='#c44'; return; }
     OB.name = v;
   }
-  if (stepId === 'email') {
+  if (stepId === 'auth') {
     const e = document.getElementById('ob-email-inp')?.value.trim();
     const p = document.getElementById('ob-pass-inp')?.value || '';
     if (!e) { document.getElementById('ob-email-inp').style.borderBottomColor='#c44'; return; }
@@ -2219,7 +2219,7 @@ document.addEventListener('keydown', e=>{
       if (OB.mode==='signin') obSignIn();
       else if (OB.mode==='signin-link') obSendLink();
       else if (OB.mode==='sent') {} // nothing
-      else if (['name','email'].includes(obSteps()[OB.step])) obNext();
+      else if (['name','auth'].includes(obSteps()[OB.step])) obNext();
     }
     return;
   }
