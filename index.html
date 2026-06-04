@@ -296,28 +296,16 @@
     }
 
     /* Thin slot indicator lines */
-    .slot-lines {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      flex: 1;
-      overflow: hidden;
-    }
-    .slot-line {
-      height: 2px;
-      border-radius: 2px;
-      background: var(--gray-500);
-      opacity: 0.55;
-      flex-shrink: 0;
-    }
-    .slot-line.mine {
-      background: var(--black);
-      opacity: 1;
-    }
-    .slot-line-label {
-      font-size: 9px;
+    /* month day count badge */
+    .mday-count {
+      font-size: 11px;
       color: var(--gray-500);
-      letter-spacing: 0.2px;
+      line-height: 1;
+      margin-top: 3px;
+    }
+    .mday-count.has-mine {
+      color: var(--black);
+      font-weight: 600;
     }
 
     /* ── WEEK VIEW ── */
@@ -407,11 +395,11 @@
     }
     .wslot:hover { background: var(--gray-100); }
     .wslot.wslot-hour { border-bottom-color: var(--gray-300); }
-    .wslot.wslot-mine { background: var(--gray-100); }
-    .wslot.wslot-mine:hover { background: #ebebeb; }
+    .wslot.wslot-mine { background: var(--black); }
+    .wslot.wslot-mine:hover { background: #333; }
     .wslot-dot {
       width: 5px; height: 5px;
-      background: var(--black);
+      background: white;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -419,6 +407,8 @@
       font-size: 9px;
       color: var(--gray-500);
     }
+    .wslot.wslot-others { background: var(--gray-100); }
+    .wslot.wslot-others:hover { background: #ebebeb; }
 
     /* ── DAY VIEW ── */
     .day-wrap {
@@ -1302,7 +1292,6 @@
       .dow-cell  { padding: 8px 4px 7px; font-size: 9px; letter-spacing: 0.4px; }
       .mcell     { padding: 7px 6px 6px; min-height: 0; gap: 4px; }
       .mday      { font-size: 12px; }
-      .slot-line { height: 2px; }
 
       /* ── week view ── */
       .week-head-col { padding: 7px 4px; }
@@ -2512,13 +2501,17 @@ function renderMonthCal() {
     const date=new Date(year,month,day);
     const dStr=`${year}-${pad(month+1)}-${pad(day)}`;
     const isSel=same(date,S.selected);
-    const uKeys=[...new Set(S.slots.filter(s=>s.slotKey.startsWith(dStr)).map(s=>s.slotKey))];
-    const lines=uKeys.slice(0,5).map(k=>`<div class="slot-line ${mk.has(k)?'mine':''}"></div>`).join('');
+    const daySlots  = S.slots.filter(s=>s.slotKey.startsWith(dStr));
+    const totalPeople = [...new Set(daySlots.map(s=>s.userId))].length;
+    const iMine = daySlots.some(s=>mk.has(s.slotKey));
+    const countBadge = totalPeople > 0
+      ? `<div class="mday-count${iMine?' has-mine':''}">${totalPeople}</div>`
+      : '';
     cells+=`
       <div class="mcell${isToday(date)?' is-today':''}${isSel?' is-selected':''}"
            onclick="selectDay(${year},${month},${day})">
         <div class="mday">${day}</div>
-        <div class="slot-lines">${lines}</div>
+        ${countBadge}
       </div>`;
   }
   const rem=(first+dim)%7===0?0:7-(first+dim)%7;
@@ -2543,9 +2536,11 @@ function renderWeekCal() {
   days.forEach(d=>{
     const rows=ALL_SLOTS.map(({hour,min})=>{
       const k=slotKey(d,hour,min), sups=signupsFor(k), mine=mk.has(k);
-      return `<div class="wslot${mine?' wslot-mine':''}${min===0?' wslot-hour':''}" onclick="openSlot('${k}')">
-        ${mine?'<div class="wslot-dot"></div>':''}
-        ${sups.length>0&&!mine?`<div class="wslot-count">${sups.length}</div>`:''}
+      const hasOthers = sups.length > 0 && !mine;
+      const cls = mine ? 'wslot-mine' : hasOthers ? 'wslot-others' : '';
+      return `<div class="wslot${cls?' '+cls:''}${min===0?' wslot-hour':''}" onclick="openSlot('${k}')">
+        ${mine ? '<div class="wslot-dot"></div>' : ''}
+        ${hasOthers ? `<div class="wslot-count">${sups.length}</div>` : ''}
       </div>`;
     }).join('');
     dayCols+=`<div class="wday-col">${rows}</div>`;
