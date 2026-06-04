@@ -1787,10 +1787,28 @@ function obRender() {
   }
   else if (stepId === 'time') {
     const initHour = OB.hour ?? 7;
+    const timeHint = (() => {
+      if (OB.frequency === 'daily') {
+        return "You'll be praying at this time every day.";
+      }
+      if (OB.frequency === 'weekly') {
+        const dayNames = OB.days.length > 0
+          ? OB.days.map(d => DAYS_FULL[d]).join(' and ')
+          : 'your chosen day';
+        return `You'll be praying at this time every ${dayNames}.`;
+      }
+      if (OB.frequency === 'monthly') {
+        const dateList = OB.days.length > 0
+          ? OB.days.map(d => `the ${d}${ordinal(d)}`).join(' and ')
+          : 'your chosen date';
+        return `You'll be praying at this time on ${dateList} of each month.`;
+      }
+      return "Drag to choose your preferred time.";
+    })();
     html = `
       <div class="ob-eyebrow">Step ${total} of ${total}</div>
       <div class="ob-q">When is a good time<br>to spend in prayer?</div>
-      <div class="ob-hint">Drag to choose your preferred time.</div>
+      <div class="ob-hint">${timeHint}</div>
       <div class="ts-wrap">
         <div class="ts-selected-time" id="ts-label">${fmtTime(initHour, OB.min??0)}</div>
         <div class="ts-container" id="ts-container"
