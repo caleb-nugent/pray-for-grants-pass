@@ -1549,7 +1549,7 @@
 </div>
 
 <!-- ONBOARDING OVERLAY -->
-<div id="ob-overlay">
+<div id="ob-overlay" style="display:none">
   <div class="ob-topbar">
     <div class="ob-logo">
       <div class="ob-logo-mark">✦</div>
@@ -1579,8 +1579,9 @@
 import { initializeApp }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         sendSignInLinkToEmail, isSignInWithEmailLink,
-         signInWithEmailLink, onAuthStateChanged, signOut }
+         sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
+         onAuthStateChanged, signOut,
+         setPersistence, browserLocalPersistence }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { getFirestore, collection, addDoc, deleteDoc, getDocs,
          query, where, onSnapshot, doc, setDoc, getDoc,
@@ -1753,6 +1754,9 @@ function generateSlotKeys(ob) {
 // ══════════════════════════════════════════════════════════════════════
 // AUTH STATE
 // ══════════════════════════════════════════════════════════════════════
+// Persist login across sessions on this device
+setPersistence(auth, browserLocalPersistence).catch(console.error);
+
 onAuthStateChanged(auth, async user => {
   if (user) {
     S.currentUser = user;
