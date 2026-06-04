@@ -9,17 +9,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --green: #2d6a4f;
-      --green-light: #e8f5ee;
-      --green-mid: #74c69d;
-      --green-line: #52b788;
       --black: #111111;
       --gray-700: #555555;
       --gray-500: #999999;
       --gray-300: #e0e0e0;
-      --gray-100: #f8f8f6;
+      --gray-200: #ececec;
+      --gray-100: #f5f5f5;
       --white: #ffffff;
-      --bg: #f5f7f5;
+      --bg: #ffffff;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -63,7 +60,7 @@
     }
     .logo-mark {
       width: 28px; height: 28px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 7px;
       display: flex; align-items: center; justify-content: center;
       color: white; font-size: 13px; flex-shrink: 0;
@@ -75,7 +72,7 @@
       color: var(--black);
       white-space: nowrap;
     }
-    .logo h1 em { font-style: italic; color: var(--green); }
+    .logo h1 em { font-style: italic; color: var(--black); }
 
     .divider { width: 1px; height: 20px; background: var(--gray-300); }
 
@@ -174,7 +171,7 @@
     .user-btn:hover { background: var(--gray-100); }
     .user-avatar {
       width: 20px; height: 20px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       color: white; font-size: 10px; font-weight: 600;
@@ -183,20 +180,20 @@
 
     /* ── NAME BANNER ── */
     .name-banner {
-      background: var(--green-light);
-      border-bottom: 1px solid #c5e8d4;
+      background: var(--gray-100);
+      border-bottom: 1px solid #dddddd;
       padding: 9px 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       font-size: 12.5px;
-      color: var(--green);
+      color: var(--black);
       flex-shrink: 0;
     }
     .name-banner-form { display: flex; gap: 7px; align-items: center; }
     .name-banner input {
       padding: 5px 10px;
-      border: 1px solid #b7dfc8;
+      border: 1px solid #cccccc;
       border-radius: 5px;
       font-size: 12px;
       font-family: inherit;
@@ -204,10 +201,10 @@
       background: white;
       width: 180px;
     }
-    .name-banner input:focus { border-color: var(--green); }
+    .name-banner input:focus { border-color: var(--black); }
     .name-banner button {
       padding: 5px 13px;
-      background: var(--green);
+      background: var(--black);
       color: white;
       border: none;
       border-radius: 5px;
@@ -275,9 +272,9 @@
     .mcell.other-month { background: #fcfcfc; }
     .mcell.other-month .mday { color: var(--gray-300); }
 
-    .mcell.is-today { background: #f2fbf6; }
+    .mcell.is-today { background: #f8f8f8; }
     .mcell.is-selected {
-      outline: 2px solid var(--green);
+      outline: 2px solid var(--black);
       outline-offset: -2px;
       background: white;
       z-index: 1;
@@ -290,7 +287,7 @@
       line-height: 1;
     }
     .mcell.is-today .mday {
-      color: var(--green);
+      color: var(--black);
       font-weight: 600;
     }
 
@@ -305,12 +302,12 @@
     .slot-line {
       height: 2px;
       border-radius: 2px;
-      background: var(--green-mid);
+      background: var(--gray-500);
       opacity: 0.55;
       flex-shrink: 0;
     }
     .slot-line.mine {
-      background: var(--green);
+      background: var(--black);
       opacity: 1;
     }
     .slot-line-label {
@@ -356,7 +353,7 @@
       font-family: 'Instrument Serif', serif;
       line-height: 1;
     }
-    .week-head-col.wh-today .wh-num { color: var(--green); font-weight: 400; }
+    .week-head-col.wh-today .wh-num { color: var(--black); font-weight: 400; }
     .week-head-col.wh-selected .wh-num {
       background: var(--black);
       color: white;
@@ -406,11 +403,11 @@
     }
     .wslot:hover { background: var(--gray-100); }
     .wslot.wslot-hour { border-bottom-color: var(--gray-300); }
-    .wslot.wslot-mine { background: var(--green-light); }
-    .wslot.wslot-mine:hover { background: #d6eddf; }
+    .wslot.wslot-mine { background: var(--gray-100); }
+    .wslot.wslot-mine:hover { background: #ebebeb; }
     .wslot-dot {
       width: 5px; height: 5px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -437,7 +434,7 @@
       font-weight: 300;
       color: var(--black);
     }
-    .day-header h2 em { font-style: normal; color: var(--green); }
+    .day-header h2 em { font-style: normal; color: var(--black); }
     .day-body {
       flex: 1;
       overflow-y: auto;
@@ -470,11 +467,11 @@
     }
     .dslot:hover { background: var(--gray-100); }
     .dslot.dslot-hour { border-bottom-color: var(--gray-300); }
-    .dslot.dslot-mine { background: var(--green-light); }
-    .dslot.dslot-mine:hover { background: #d6eddf; }
+    .dslot.dslot-mine { background: var(--gray-100); }
+    .dslot.dslot-mine:hover { background: #ebebeb; }
     .dslot-dot {
       width: 6px; height: 6px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -507,7 +504,7 @@
       color: var(--black);
       margin-bottom: 2px;
     }
-    .detail-day-num em { font-style: italic; color: var(--green); }
+    .detail-day-num em { font-style: italic; color: var(--black); }
     .detail-month {
       font-size: 13px;
       color: var(--gray-500);
@@ -539,8 +536,8 @@
       border-bottom: 1px solid var(--gray-100);
     }
     .detail-slot:hover { background: var(--gray-100); }
-    .detail-slot.ds-mine { background: var(--green-light); }
-    .detail-slot.ds-mine:hover { background: #d6eddf; }
+    .detail-slot.ds-mine { background: var(--gray-100); }
+    .detail-slot.ds-mine:hover { background: #ebebeb; }
 
     .ds-time {
       font-size: 13px;
@@ -561,7 +558,7 @@
     }
     .ds-mine-dot {
       width: 6px; height: 6px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 50%;
     }
 
@@ -576,7 +573,7 @@
     .detail-show-more {
       padding: 10px 24px;
       font-size: 11px;
-      color: var(--green);
+      color: var(--black);
       cursor: pointer;
       background: none;
       border: none;
@@ -631,7 +628,7 @@
       content: '';
       display: block;
       width: 5px; height: 5px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -655,7 +652,7 @@
       outline: none;
       transition: border-color 0.15s;
     }
-    .modal input[type="text"]:focus { border-color: var(--green); }
+    .modal input[type="text"]:focus { border-color: var(--black); }
 
     .modal-attendees {
       margin-top: 16px;
@@ -680,7 +677,7 @@
     .attendee::before {
       content: '';
       width: 4px; height: 4px;
-      background: var(--green-mid);
+      background: var(--gray-500);
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -694,8 +691,8 @@
       font-size: 13px; font-family: inherit; font-weight: 500;
       cursor: pointer; transition: all 0.14s;
     }
-    .btn-primary { background: var(--green); color: white; }
-    .btn-primary:hover { background: #245c43; }
+    .btn-primary { background: var(--black); color: white; }
+    .btn-primary:hover { background: #333333; }
     .btn-ghost { background: var(--gray-100); color: var(--gray-700); }
     .btn-ghost:hover { background: var(--gray-300); }
     .btn-danger { background: #fff0f0; color: #c44; }
@@ -738,7 +735,7 @@
 
     .green-btn {
       padding: 9px 22px;
-      background: var(--green);
+      background: var(--black);
       color: white;
       border: none;
       border-radius: 7px;
@@ -771,8 +768,8 @@
       font-size: 11px;
       padding: 2px 9px;
       border-radius: 20px;
-      background: var(--green-light);
-      color: var(--green);
+      background: var(--gray-100);
+      color: var(--black);
     }
 
     .admin-badge {
@@ -796,7 +793,7 @@
     .ob-spinner {
       width: 16px; height: 16px;
       border: 2px solid var(--gray-300);
-      border-top-color: var(--green);
+      border-top-color: var(--black);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       flex-shrink: 0;
@@ -847,7 +844,7 @@
     }
     .ob-logo-mark {
       width: 26px; height: 26px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
       color: white; font-size: 12px;
@@ -858,7 +855,7 @@
       font-weight: 400;
       color: var(--black);
     }
-    .ob-logo span em { font-style: italic; color: var(--green); }
+    .ob-logo span em { font-style: italic; color: var(--black); }
 
     /* progress dots */
     .ob-dots {
@@ -871,11 +868,11 @@
       transition: all 0.3s;
     }
     .ob-dot.active {
-      background: var(--green);
+      background: var(--black);
       width: 18px;
       border-radius: 3px;
     }
-    .ob-dot.done { background: var(--green-mid); }
+    .ob-dot.done { background: var(--gray-500); }
 
     /* skip */
     .ob-skip {
@@ -916,7 +913,7 @@
       font-weight: 600;
       letter-spacing: 1.2px;
       text-transform: uppercase;
-      color: var(--green);
+      color: var(--black);
       margin-bottom: 14px;
     }
 
@@ -928,7 +925,7 @@
       color: var(--black);
       margin-bottom: 8px;
     }
-    .ob-q em { font-style: italic; color: var(--green); }
+    .ob-q em { font-style: italic; color: var(--black); }
 
     .ob-hint {
       font-size: 13px;
@@ -955,7 +952,7 @@
       background: transparent;
       transition: border-color 0.2s;
     }
-    .ob-input:focus { border-bottom-color: var(--green); }
+    .ob-input:focus { border-bottom-color: var(--black); }
     .ob-input::placeholder { color: var(--gray-300); }
 
     /* continue button */
@@ -965,7 +962,7 @@
       gap: 8px;
       margin-top: 28px;
       padding: 11px 24px;
-      background: var(--green);
+      background: var(--black);
       color: white;
       border: none;
       border-radius: 8px;
@@ -975,7 +972,7 @@
       cursor: pointer;
       transition: background 0.15s, transform 0.1s;
     }
-    .ob-continue:hover { background: #245c43; }
+    .ob-continue:hover { background: #333333; }
     .ob-continue:active { transform: scale(0.97); }
     .ob-continue-arrow { font-size: 16px; }
 
@@ -1017,8 +1014,8 @@
       text-align: left;
       font-family: inherit;
     }
-    .ob-option:hover { border-color: var(--green); background: var(--green-light); }
-    .ob-option.selected { border-color: var(--green); background: var(--green-light); }
+    .ob-option:hover { border-color: var(--black); background: var(--gray-100); }
+    .ob-option.selected { border-color: var(--black); background: var(--gray-100); }
 
     .ob-option-label {
       font-size: 16px;
@@ -1040,8 +1037,8 @@
       transition: all 0.15s;
     }
     .ob-option.selected .ob-option-check {
-      background: var(--green);
-      border-color: var(--green);
+      background: var(--black);
+      border-color: var(--black);
       color: white;
     }
 
@@ -1064,10 +1061,10 @@
       color: var(--black);
       white-space: nowrap;
     }
-    .ob-chip:hover { border-color: var(--green); color: var(--green); }
+    .ob-chip:hover { border-color: var(--black); color: var(--black); }
     .ob-chip.selected {
-      border-color: var(--green);
-      background: var(--green);
+      border-color: var(--black);
+      background: var(--black);
       color: white;
     }
 
@@ -1107,7 +1104,7 @@
       transition: transform 0.2s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
-    .ob-toggle.on { background: var(--green); }
+    .ob-toggle.on { background: var(--black); }
     .ob-toggle.on::after { transform: translateX(16px); }
     .ob-consent-text { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
     .ob-consent-text strong { color: var(--black); display: block; margin-bottom: 2px; font-size: 14px; }
@@ -1116,7 +1113,7 @@
     .ob-done-icon {
       width: 56px; height: 56px;
       border-radius: 50%;
-      background: var(--green-light);
+      background: var(--gray-100);
       display: flex; align-items: center; justify-content: center;
       font-size: 26px;
       margin-bottom: 24px;
@@ -1136,7 +1133,7 @@
     }
     .ob-summary-dot {
       width: 6px; height: 6px;
-      background: var(--green);
+      background: var(--black);
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -1183,7 +1180,7 @@
   <!-- APP LOADING -->
   <div id="app-loading">
     <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
-      <div style="width:28px;height:28px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:13px">✦</div>
+      <div style="width:28px;height:28px;background:var(--black);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:13px">✦</div>
       <div class="ob-spinner" style="width:20px;height:20px"></div>
     </div>
   </div>
@@ -1522,7 +1519,7 @@ function obRender() {
       <div class="ob-done-sub">We sent a sign-in link to <strong>${OB.email}</strong>.<br>Click the link in the email to open your calendar.</div>
       <div style="margin-top:20px;font-size:13px;color:var(--gray-500)">
         Didn't get it?
-        <button onclick="obResend()" style="background:none;border:none;color:var(--green);
+        <button onclick="obResend()" style="background:none;border:none;color:var(--black);
           cursor:pointer;font-family:inherit;font-size:13px;text-decoration:underline;padding:0">
           Resend link
         </button>
@@ -1558,7 +1555,7 @@ function obRender() {
       <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--gray-300)">
         <span style="font-size:12px;color:var(--gray-500)">Prefer not to use a password?</span>
         <button onclick="OB.mode='signin-link';OB.error='';obRender()"
-          style="background:none;border:none;color:var(--green);cursor:pointer;
+          style="background:none;border:none;color:var(--black);cursor:pointer;
                  font-family:inherit;font-size:12px;padding:0 0 0 6px;text-decoration:underline">
           Send me a sign-in link instead
         </button>
@@ -1582,7 +1579,7 @@ function obRender() {
       <div style="margin-top:24px;font-size:12px;color:var(--gray-500)">
         Already have an account?
         <button onclick="OB.mode='signin';OB.error='';obRender()"
-          style="background:none;border:none;color:var(--green);cursor:pointer;
+          style="background:none;border:none;color:var(--black);cursor:pointer;
                  font-family:inherit;font-size:12px;padding:0;text-decoration:underline">
           Sign in
         </button>
@@ -1779,7 +1776,7 @@ async function obFinish() {
   } catch (err) {
     OB.loading = false;
     if (err.code === 'auth/email-already-in-use') {
-      OB.error = 'That email is already registered. <a href="#" onclick="OB.mode=\'signin\';OB.error=\'\';obRender();return false" style="color:var(--green)">Sign in instead.</a>';
+      OB.error = 'That email is already registered. <a href="#" onclick="OB.mode=\'signin\';OB.error=\'\';obRender();return false" style="color:var(--black)">Sign in instead.</a>';
     } else {
       OB.error = err.message;
     }
@@ -1792,7 +1789,7 @@ async function obResend() {
     await sendSignInLinkToEmail(auth, OB.email, ACTION_CODE_SETTINGS);
     // briefly flash confirmation
     const btn = document.querySelector('[onclick="obResend()"]');
-    if (btn) { btn.textContent = 'Sent ✓'; btn.style.color='var(--green)'; }
+    if (btn) { btn.textContent = 'Sent ✓'; btn.style.color='var(--black)'; }
   } catch (err) { console.error(err); }
 }
 
