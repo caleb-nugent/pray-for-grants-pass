@@ -2137,7 +2137,7 @@ function checkAdmin() {
 // KEYBOARD
 // ══════════════════════════════════════════════════════════════════════
 document.addEventListener('keydown', e=>{
-  if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  // Handle onboarding Enter BEFORE the input-guard early return
   const ov=document.getElementById('ob-overlay');
   if (ov && ov.style.display!=='none') {
     if (e.key==='Enter') {
@@ -2147,6 +2147,7 @@ document.addEventListener('keydown', e=>{
     }
     return;
   }
+  if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
   if (e.key==='ArrowLeft')  navigate(-1);
   if (e.key==='ArrowRight') navigate(1);
   if (e.key==='t')          goToday();
