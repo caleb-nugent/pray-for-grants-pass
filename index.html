@@ -1222,7 +1222,8 @@
 // ══════════════════════════════════════════════════════════════════════
 import { initializeApp }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink,
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         sendSignInLinkToEmail, isSignInWithEmailLink,
          signInWithEmailLink, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { getFirestore, collection, addDoc, deleteDoc, getDocs,
@@ -1458,7 +1459,7 @@ async function doSignOut() {
 // ══════════════════════════════════════════════════════════════════════
 const OB = {
   step: 0, mode: 'onboard',
-  name: '', email: '',
+  name: '', email: '', password: '',
   emailConsent: true, frequency: '',
   days: [], hour: null,
   transitioning: false, error: '', loading: false,
@@ -1485,6 +1486,33 @@ function obRender() {
 
   let html = '';
 
+  if (OB.mode === 'signin-link') {
+    document.getElementById('ob-dots').innerHTML = '';
+    const wrap = document.getElementById('ob-step');
+    wrap.innerHTML = `<div class="ob-step-inner">
+      <div class="ob-eyebrow">Passwordless sign in</div>
+      <div class="ob-q">Send me a sign-in link</div>
+      <div class="ob-hint">Enter your email and we'll send a one-click sign-in link.</div>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-link-email" type="email"
+          placeholder="Email address" value="${OB.email}" autocomplete="email" />
+      </div>
+      ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:10px">${OB.error}</div>` : ''}
+      <div style="margin-top:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button class="ob-continue" onclick="obSendLink()" ${OB.loading?'disabled style="opacity:0.6"':''}>
+          ${OB.loading?'<span class="ob-spinner" style="width:14px;height:14px;border-color:rgba(255,255,255,0.4);border-top-color:white"></span>':''}
+          Send link <span class="ob-continue-arrow">→</span>
+        </button>
+        <button onclick="OB.mode='signin';OB.error='';obRender()"
+          style="background:none;border:none;font-size:13px;color:var(--gray-500);cursor:pointer;font-family:inherit">
+          ← Use password
+        </button>
+      </div>
+    </div>`;
+    setTimeout(() => document.getElementById('ob-link-email')?.focus(), 60);
+    return;
+  }
+
   if (OB.mode === 'sent') {
     document.getElementById('ob-dots').innerHTML = '';
     const wrap = document.getElementById('ob-step');
@@ -1507,20 +1535,32 @@ function obRender() {
     html = `
       <div class="ob-eyebrow">Welcome back</div>
       <div class="ob-q">Sign in to your account</div>
-      <div class="ob-hint">Enter your email and we'll send you a sign-in link — no password needed.</div>
-      <div class="ob-input-wrap">
+      <div class="ob-hint">Enter your email and password to sign in.</div>
+      <div class="ob-input-wrap" style="margin-bottom:18px">
         <input class="ob-input" id="ob-si-email" type="email"
           placeholder="Email address" value="${OB.email}" autocomplete="email" />
+      </div>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-si-pass" type="password"
+          placeholder="Password" autocomplete="current-password" />
       </div>
       ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:10px">${OB.error}</div>` : ''}
       <div style="margin-top:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button class="ob-continue" onclick="obSignIn()" ${OB.loading?'disabled style="opacity:0.6"':''}>
           ${OB.loading?'<span class="ob-spinner" style="width:14px;height:14px;border-color:rgba(255,255,255,0.4);border-top-color:white"></span>':''}
-          Send link <span class="ob-continue-arrow">→</span>
+          Sign in <span class="ob-continue-arrow">→</span>
         </button>
         <button onclick="OB.mode='onboard';OB.error='';obRender()"
           style="background:none;border:none;font-size:13px;color:var(--gray-500);cursor:pointer;font-family:inherit">
           ← New account
+        </button>
+      </div>
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--gray-300)">
+        <span style="font-size:12px;color:var(--gray-500)">Prefer not to use a password?</span>
+        <button onclick="OB.mode='signin-link';OB.error='';obRender()"
+          style="background:none;border:none;color:var(--green);cursor:pointer;
+                 font-family:inherit;font-size:12px;padding:0 0 0 6px;text-decoration:underline">
+          Send me a sign-in link instead
         </button>
       </div>`;
   }
@@ -1552,10 +1592,15 @@ function obRender() {
     html = `
       <div class="ob-eyebrow">Step 2 of ${total}</div>
       <div class="ob-q">Create your account${OB.name?`, <em>${OB.name}</em>`:''}.</div>
-      <div class="ob-hint">We'll send a sign-in link here — no password needed.</div>
-      <div class="ob-input-wrap">
+      <div class="ob-hint">You'll use this to sign in from any device.</div>
+      <div class="ob-input-wrap" style="margin-bottom:18px">
         <input class="ob-input" id="ob-email-inp" type="email"
           placeholder="Email address" value="${OB.email}" autocomplete="email" />
+      </div>
+      <div class="ob-input-wrap">
+        <input class="ob-input" id="ob-pass-inp" type="password"
+          placeholder="Create a password (6+ characters)"
+          value="${OB.password}" autocomplete="new-password" />
       </div>
       ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:10px">${OB.error}</div>` : ''}
       <div class="ob-consent" onclick="OB.emailConsent=!OB.emailConsent;obRender()" style="margin-top:20px">
@@ -1664,10 +1709,10 @@ function obRender() {
       </div>
       ${OB.loading ? `
         <div style="display:flex;align-items:center;gap:10px;color:var(--gray-500);font-size:13px">
-          <div class="ob-spinner"></div> Sending your sign-in link…
+          <div class="ob-spinner"></div> Setting up your account…
         </div>` : `
         <button class="ob-continue" onclick="obFinish()">
-          Send me a sign-in link <span class="ob-continue-arrow">→</span>
+          Open my calendar <span class="ob-continue-arrow">→</span>
         </button>`}
       ${OB.error ? `<div style="color:#c44;font-size:13px;margin-top:12px">${OB.error}</div>`:''}`;
   }
@@ -1696,8 +1741,10 @@ function obNext() {
   }
   if (stepId === 'email') {
     const e = document.getElementById('ob-email-inp')?.value.trim();
+    const p = document.getElementById('ob-pass-inp')?.value || '';
     if (!e) { document.getElementById('ob-email-inp').style.borderBottomColor='#c44'; return; }
-    OB.email = e;
+    if (p.length < 6) { OB.error='Password must be at least 6 characters.'; obRender(); return; }
+    OB.email = e; OB.password = p;
   }
   if (stepId === 'frequency' && !OB.frequency) return;
   if (stepId === 'time' && OB.hour===null) OB.hour = 7;
@@ -1710,22 +1757,32 @@ function obNext() {
 async function obFinish() {
   OB.loading = true; OB.error = ''; obRender();
   try {
-    // Save onboarding data so we can use it after the email link is clicked
-    localStorage.setItem(PENDING_PROFILE_KEY, JSON.stringify({
+    const cred = await createUserWithEmailAndPassword(auth, OB.email, OB.password);
+    const uid  = cred.user.uid;
+    await saveProfile(uid, {
       name: OB.name, email: OB.email,
       notificationConsent: OB.emailConsent,
       frequency: OB.frequency,
       preferredDays: OB.days, preferredHour: OB.hour,
-    }));
-    localStorage.setItem(EMAIL_KEY, OB.email);
-
-    await sendSignInLinkToEmail(auth, OB.email, ACTION_CODE_SETTINGS);
-    OB.loading = false;
-    OB.mode = 'sent';
-    obRender();
+      createdAt: serverTimestamp(),
+    });
+    if (OB.hour !== null) {
+      const keys  = generateSlotKeys(OB);
+      const batch = writeBatch(db);
+      keys.forEach(k => batch.set(doc(collection(db, 'prayer_slots')), {
+        userId: uid, userName: OB.name,
+        slotKey: k, createdAt: serverTimestamp(),
+      }));
+      await batch.commit();
+    }
+    // onAuthStateChanged fires and transitions to app
   } catch (err) {
     OB.loading = false;
-    OB.error = err.message;
+    if (err.code === 'auth/email-already-in-use') {
+      OB.error = 'That email is already registered. <a href="#" onclick="OB.mode=\'signin\';OB.error=\'\';obRender();return false" style="color:var(--green)">Sign in instead.</a>';
+    } else {
+      OB.error = err.message;
+    }
     obRender();
   }
 }
@@ -1741,6 +1798,24 @@ async function obResend() {
 
 async function obSignIn() {
   const email = document.getElementById('ob-si-email')?.value.trim();
+  const pass  = document.getElementById('ob-si-pass')?.value || '';
+  if (!email || !pass) return;
+  OB.email = email;
+  OB.loading = true; OB.error = ''; obRender();
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged handles the rest
+  } catch (err) {
+    OB.loading = false;
+    OB.error = (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')
+      ? 'Incorrect email or password.' : err.message;
+    obRender();
+  }
+}
+
+// Separate function for the magic-link sign-in path
+async function obSendLink() {
+  const email = document.getElementById('ob-link-email')?.value.trim();
   if (!email) return;
   OB.email = email;
   OB.loading = true; OB.error = ''; obRender();
@@ -2142,6 +2217,7 @@ document.addEventListener('keydown', e=>{
   if (ov && ov.style.display!=='none') {
     if (e.key==='Enter') {
       if (OB.mode==='signin') obSignIn();
+      else if (OB.mode==='signin-link') obSendLink();
       else if (OB.mode==='sent') {} // nothing
       else if (['name','email'].includes(obSteps()[OB.step])) obNext();
     }
@@ -2162,7 +2238,7 @@ document.addEventListener('keydown', e=>{
 // ══════════════════════════════════════════════════════════════════════
 Object.assign(window, {
   navigate, goToday, switchView, setPage, selectDay,
-  obNext, obSkip, obFinish, obSignIn, obResend, obToggleDay, obRender,
+  obNext, obSkip, obFinish, obSignIn, obSendLink, obResend, obToggleDay, obRender,
   openSlot, closeModal, doSignUp, removeSlotFromDb,
   toggleUserMenu, doSignOut, checkAdmin,
   S, OB,
