@@ -1255,6 +1255,227 @@
       margin-top: 10px;
       letter-spacing: 0.3px;
     }
+
+    /* ══════════════════════════════════════════
+       MOBILE  (≤ 768px)
+    ══════════════════════════════════════════ */
+    @media (max-width: 768px) {
+
+      /* ── top bar ── */
+      .topbar {
+        padding: 0 14px;
+        height: 52px;
+        gap: 8px;
+      }
+      .divider,
+      .today-btn,
+      .page-tabs { display: none; }
+
+      .logo-mark { width: 26px; height: 26px; font-size: 12px; border-radius: 6px; }
+      .logo h1   { font-size: 14px; }
+
+      .month-label { font-size: 13px; gap: 3px; }
+      .nav-btn     { width: 22px; height: 22px; font-size: 13px; }
+
+      .view-tab  { padding: 4px 10px; font-size: 11px; }
+
+      .user-btn  { padding: 4px 8px 4px 6px; font-size: 11px; gap: 5px; }
+      .user-avatar { width: 18px; height: 18px; font-size: 9px; }
+
+      /* ── content area ── */
+      .content {
+        padding-bottom: 56px; /* room for bottom nav */
+        height: calc(100vh - 52px);
+      }
+
+      /* ── hide desktop detail panel ── */
+      .detail-panel { display: none !important; }
+
+      /* ── calendar fills full width ── */
+      .cal-wrap, .week-wrap, .day-wrap { flex: 1; min-width: 0; }
+
+      /* ── month grid ── */
+      .dow-cell  { padding: 8px 4px 7px; font-size: 9px; letter-spacing: 0.4px; }
+      .mcell     { padding: 7px 6px 6px; min-height: 0; gap: 4px; }
+      .mday      { font-size: 12px; }
+      .slot-line { height: 2px; }
+
+      /* ── week view ── */
+      .week-head-col { padding: 7px 4px; }
+      .wh-dow  { font-size: 8px; }
+      .wh-num  { font-size: 15px; }
+      .week-head-gutter { width: 36px; }
+      .wtime-col { width: 36px; }
+      .wtime-label { font-size: 8px; padding-right: 5px; }
+      .wslot { height: 26px; }
+
+      /* ── day view ── */
+      .dtime-col    { width: 48px; }
+      .dtime-label  { font-size: 9px; padding-right: 8px; }
+      .dslot        { height: 30px; padding: 0 8px; }
+      .day-header   { padding: 12px 16px; }
+      .day-header h2 { font-size: 18px; }
+
+      /* ── pages (My Slots, Admin) ── */
+      .page-content { padding: 24px 20px; }
+      .page-content h2 { font-size: 20px; }
+
+      /* ── modal ── */
+      .backdrop { align-items: flex-end; }
+      .modal {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        padding: 24px 24px 32px;
+      }
+
+      /* ── bottom nav ── */
+      .bottom-nav {
+        display: flex !important;
+      }
+
+      /* ── mobile sheet ── */
+      .mobile-sheet {
+        display: flex !important;
+        flex-direction: column;
+      }
+      .sheet-overlay.open {
+        display: block !important;
+      }
+    }
+
+    /* ── bottom nav (hidden on desktop) ── */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--white);
+      border-top: 1px solid var(--gray-300);
+      z-index: 60;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .bn-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: none;
+      background: none;
+      font-family: inherit;
+      font-size: 10px;
+      color: var(--gray-500);
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.12s;
+      letter-spacing: 0.3px;
+    }
+    .bn-item.active { color: var(--black); font-weight: 600; }
+    .bn-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    /* ── mobile day sheet ── */
+    .mobile-sheet {
+      display: none;
+      position: fixed;
+      bottom: 56px; left: 0; right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--gray-300);
+      border-radius: 16px 16px 0 0;
+      z-index: 55;
+      max-height: 68vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .mobile-sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--gray-300);
+      border-radius: 2px;
+      margin: 10px auto 0;
+      flex-shrink: 0;
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .sheet-date-num {
+      font-family: 'Instrument Serif', serif;
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--black);
+    }
+    .sheet-date-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .sheet-close {
+      width: 28px; height: 28px;
+      border: 1px solid var(--gray-300);
+      border-radius: 50%;
+      background: none;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gray-500);
+      flex-shrink: 0;
+    }
+    .sheet-slots { padding: 0 0 16px; }
+    .sheet-slot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+    }
+    .sheet-slot:active { background: var(--gray-100); }
+    .sheet-slot-mine { background: var(--gray-100); }
+    .sheet-slot-time { font-size: 14px; color: var(--black); font-weight: 500; }
+    .sheet-slot-sub  { font-size: 12px; color: var(--gray-500); margin-top: 1px; }
+    .sheet-slot-right { display: flex; align-items: center; gap: 8px; }
+    .sheet-slot-count { font-size: 12px; color: var(--gray-500); }
+    .sheet-mine-dot {
+      width: 7px; height: 7px;
+      background: var(--black);
+      border-radius: 50%;
+    }
+    .sheet-empty {
+      padding: 28px 20px;
+      font-size: 14px;
+      color: var(--gray-500);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .sheet-section-label {
+      padding: 12px 20px 6px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* overlay behind sheet */
+    .sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.2);
+      z-index: 54;
+    }
+    .sheet-overlay.open { display: block; }
   </style>
 </head>
 <body>
@@ -1305,6 +1526,26 @@
 
   <!-- CONTENT -->
   <div class="content" id="content"></div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bn-item" id="bn-calendar" onclick="setPage('calendar')">
+      <span class="bn-icon">◻</span>Calendar
+    </button>
+    <button class="bn-item" id="bn-mine" onclick="setPage('mine')">
+      <span class="bn-icon">🙏</span>My Slots
+    </button>
+    <button class="bn-item" id="bn-admin" onclick="setPage('admin')">
+      <span class="bn-icon">⚙</span>Admin
+    </button>
+  </nav>
+
+  <!-- MOBILE DAY SHEET -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeMobileSheet()"></div>
+  <div class="mobile-sheet" id="mobile-sheet">
+    <div class="sheet-handle"></div>
+    <div id="mobile-sheet-inner"></div>
+  </div>
 </div>
 
 <!-- ONBOARDING OVERLAY -->
@@ -1392,6 +1633,7 @@ const S = {
   slots: [],           // populated by Firestore listener
   adminUnlocked: false,
   showAllDetail: false,
+  mobileSheetOpen: false,
   initialized: false,
 };
 
@@ -1448,7 +1690,7 @@ function setupSlotsListener() {
   if (unsubSlots) unsubSlots();
   unsubSlots = onSnapshot(collection(db, 'prayer_slots'), snap => {
     S.slots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (S.initialized) render();
+    if (S.initialized) { render(); if (S.mobileSheetOpen) renderMobileSheet(); }
   }, err => console.error('Slots listener:', err));
 }
 
@@ -2026,7 +2268,62 @@ function switchView(v)  { S.view=v; render(); }
 function setPage(p)     { S.page=p; render(); }
 function selectDay(y,m,d) {
   S.selected=new Date(y,m,d); S.cursor=new Date(y,m,d);
-  S.showAllDetail=false; render();
+  S.showAllDetail=false;
+  if (window.innerWidth <= 768) {
+    S.mobileSheetOpen = true;
+    render();
+    renderMobileSheet();
+    document.getElementById('mobile-sheet')?.classList.add('open');
+    document.getElementById('sheet-overlay')?.classList.add('open');
+  } else {
+    render();
+  }
+}
+
+function closeMobileSheet() {
+  S.mobileSheetOpen = false;
+  document.getElementById('mobile-sheet')?.classList.remove('open');
+  document.getElementById('sheet-overlay')?.classList.remove('open');
+}
+
+function renderMobileSheet() {
+  const sel  = S.selected;
+  const dStr = `${sel.getFullYear()}-${pad(sel.getMonth()+1)}-${pad(sel.getDate())}`;
+  const mk   = new Set(myKeys());
+  const dayKeys = [...new Set(S.slots.filter(s=>s.slotKey.startsWith(dStr)).map(s=>s.slotKey))].sort();
+  const isT  = isToday(sel);
+
+  let slotsHtml = '';
+  if (dayKeys.length === 0) {
+    slotsHtml = `<div class="sheet-empty">No slots yet for this day.<br>${S.currentUser ? 'Tap a time below to add one.' : 'Sign in to add yourself.'}</div>`;
+  } else {
+    slotsHtml = dayKeys.map(k => {
+      const p    = parseKey(k);
+      const sups = signupsFor(k);
+      const mine = mk.has(k);
+      return `<div class="sheet-slot ${mine?'sheet-slot-mine':''}" onclick="closeMobileSheet();openSlot('${k}')">
+        <div>
+          <div class="sheet-slot-time">${fmtTime(p.hour,p.min)}</div>
+          <div class="sheet-slot-sub">${fmtTime(p.hour,p.min+15)}</div>
+        </div>
+        <div class="sheet-slot-right">
+          ${sups.length > 0 ? `<span class="sheet-slot-count">${sups.length} praying</span>` : ''}
+          ${mine ? '<div class="sheet-mine-dot"></div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('mobile-sheet-inner').innerHTML = `
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-date-num">${isT ? `<em style="font-style:italic">${sel.getDate()}</em>` : sel.getDate()}</div>
+        <div class="sheet-date-sub">${MONTHS[sel.getMonth()]} · ${DAYS_FULL[sel.getDay()]}</div>
+      </div>
+      <button class="sheet-close" onclick="closeMobileSheet()">✕</button>
+    </div>
+    <div class="sheet-section-label">Prayer slots</div>
+    <div class="sheet-slots">${slotsHtml}</div>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2057,6 +2354,11 @@ function render() {
     document.getElementById('vt-'+v).classList.toggle('active', S.view===v));
   ['calendar','mine','admin'].forEach(p =>
     document.getElementById('pt-'+p).classList.toggle('active', S.page===p));
+  // bottom nav (mobile)
+  ['calendar','mine','admin'].forEach(p => {
+    const el = document.getElementById('bn-'+p);
+    if (el) el.classList.toggle('active', S.page===p);
+  });
 
   const ct = document.getElementById('content');
   if (S.page==='admin') { ct.innerHTML=renderAdmin(); return; }
@@ -2473,6 +2775,7 @@ Object.assign(window, {
   tsDown, tsMove, tsUp, tsInit, TS,
   openSlot, closeModal, doSignUp, removeSlotFromDb,
   toggleUserMenu, doSignOut, checkAdmin,
+  closeMobileSheet, renderMobileSheet,
   S, OB,
 });
 
