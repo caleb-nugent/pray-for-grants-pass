@@ -1878,7 +1878,7 @@ function obNext() {
     OB.name = v;
   }
   if (stepId === 'auth') {
-    const e = document.getElementById('ob-email-inp')?.value.trim();
+    const e = document.getElementById('ob-email-inp')?.value.trim().toLowerCase();
     const p = document.getElementById('ob-pass-inp')?.value || '';
     if (!e) { document.getElementById('ob-email-inp').style.borderBottomColor='#c44'; return; }
     if (p.length < 6) { OB.error='Password must be at least 6 characters.'; obRender(); return; }
@@ -1934,7 +1934,7 @@ async function obResend() {
 }
 
 async function obSignIn() {
-  const email = document.getElementById('ob-si-email')?.value.trim();
+  const email = document.getElementById('ob-si-email')?.value.trim().toLowerCase();
   const pass  = document.getElementById('ob-si-pass')?.value || '';
   if (!email || !pass) return;
   OB.email = email;
@@ -1952,7 +1952,7 @@ async function obSignIn() {
 
 // Separate function for the magic-link sign-in path
 async function obSendLink() {
-  const email = document.getElementById('ob-link-email')?.value.trim();
+  const email = document.getElementById('ob-link-email')?.value.trim().toLowerCase();
   if (!email) return;
   OB.email = email;
   OB.loading = true; OB.error = ''; obRender();
@@ -2488,7 +2488,7 @@ if (isSignInWithEmailLink(auth, window.location.href)) {
     email = window.prompt('Please confirm your email address to sign in:');
   }
   if (email) {
-    signInWithEmailLink(auth, email, window.location.href)
+    signInWithEmailLink(auth, email.toLowerCase(), window.location.href)
       .then(() => {
         localStorage.removeItem(EMAIL_KEY);
         // Clean the token out of the URL
