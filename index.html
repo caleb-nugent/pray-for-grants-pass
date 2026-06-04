@@ -1476,6 +1476,113 @@
       z-index: 54;
     }
     .sheet-overlay.open { display: block; }
+
+    /* ── MY SLOTS PAGE ── */
+    .ms-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 36px 32px 48px;
+    }
+    @media (max-width: 768px) {
+      .ms-wrap { padding: 24px 20px 40px; }
+    }
+
+    .ms-greeting {
+      font-family: 'Instrument Serif', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--black);
+      margin-bottom: 28px;
+    }
+    .ms-greeting em { font-style: italic; }
+
+    /* Commitment card */
+    .ms-card {
+      border: 1px solid var(--gray-300);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .ms-card-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+    .ms-commitment {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--black);
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+    .ms-change-btn {
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--gray-500);
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .ms-change-btn:hover { color: var(--black); }
+
+    /* Upcoming section */
+    .ms-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .ms-slot-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .ms-slot-date { font-size: 15px; font-weight: 400; color: var(--black); }
+    .ms-slot-time { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+    .ms-remove-btn {
+      background: none;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--gray-500);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .ms-remove-btn:hover { border-color: #c44; color: #c44; }
+    .ms-show-more {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-top: 12px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      padding: 0;
+    }
+    .ms-show-more:hover { color: var(--black); }
+
+    /* Change-time modal content */
+    .ct-modal { padding: 0; }
+    .ct-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body>
@@ -1636,6 +1743,7 @@ const S = {
   showAllDetail: false,
   mobileSheetOpen: false,
   initialized: false,
+  profile: null,
 };
 
 let unsubSlots = null;
@@ -1784,8 +1892,9 @@ onAuthStateChanged(auth, async user => {
       }
     }
 
-    if (profile) S.userName = profile.name || '';
+    if (profile) { S.userName = profile.name || ''; S.profile = profile; }
     setupSlotsListener();
+    if (window.innerWidth <= 768) S.page = 'mine';
     // hide onboarding
     const ov = document.getElementById('ob-overlay');
     ov.classList.add('ob-exit');
@@ -2567,34 +2676,180 @@ function renderMySlots() {
       <button class="green-btn" onclick="toggleUserMenu()">Sign in</button>
     </div></div>`;
 
-  const mine=S.slots.filter(s=>s.userId===S.currentUser.uid)
-    .sort((a,b)=>a.slotKey.localeCompare(b.slotKey));
+  const profile = S.profile;
+  const now = new Date();
+  const mine = S.slots
+    .filter(s => s.userId === S.currentUser.uid)
+    .sort((a,b) => a.slotKey.localeCompare(b.slotKey));
 
-  if (mine.length===0) return `
-    <div class="page-content"><div class="empty-page">
-      <div class="empty-icon">📅</div><h2>No slots yet</h2>
-      <p>Head to the calendar to sign up for a prayer time.</p>
-      <button class="green-btn" onclick="setPage('calendar')">Open calendar</button>
-    </div></div>`;
+  const upcoming = mine.filter(s => {
+    const p = parseKey(s.slotKey);
+    return new Date(p.year, p.month, p.day, p.hour, p.min) >= now;
+  });
 
-  const rows=mine.map(s=>{
-    const p=parseKey(s.slotKey), date=new Date(p.year,p.month,p.day);
-    return `<div class="slot-list-row">
-      <div>
-        <div class="slr-label">${fmtDate(date)}</div>
-        <div class="slr-sub">${fmtTime(p.hour,p.min)} – ${fmtTime(p.hour,p.min+15)}</div>
-      </div>
-      <button class="btn btn-danger" style="flex:none;padding:6px 14px;font-size:12px"
-              onclick="removeSlotFromDb('${s.slotKey}')">Remove</button>
-    </div>`;
-  }).join('');
+  // ── Commitment summary card ──────────────────────────────────────
+  let cardHtml = '';
+  const freq = profile?.frequency;
+  if (freq) {
+    const h    = profile.preferredHour ?? 7;
+    const m    = profile.preferredMin  ?? profile.min ?? 0;
+    const days = profile.preferredDays ?? [];
+    let phrase = '';
+    if (freq === 'daily') {
+      phrase = `every day at <strong>${fmtTime(h, m)}</strong>`;
+    } else if (freq === 'weekly') {
+      const dayStr = days.length > 0
+        ? days.map(d => DAYS_FULL[d]).join(' and ')
+        : 'your chosen day';
+      phrase = `every <strong>${dayStr}</strong> at <strong>${fmtTime(h, m)}</strong>`;
+    } else if (freq === 'monthly') {
+      const dateStr = days.length > 0
+        ? days.map(d => `the \${d}\${ordinal(d)}`).join(' and ')
+        : 'your chosen date';
+      phrase = `on <strong>${dateStr}</strong> of each month at <strong>${fmtTime(h, m)}</strong>`;
+    }
+    cardHtml = `
+      <div class="ms-card">
+        <div class="ms-card-label">Your commitment</div>
+        <div class="ms-commitment">You've committed to praying ${phrase}.</div>
+        <button class="ms-change-btn" onclick="openChangeTime()">Want to change your time? →</button>
+      </div>`;
+  }
+
+  // ── Upcoming slots (only show if no recurring pattern, or show next few) ──
+  let slotsHtml = '';
+  const SHOW = 5;
+  const hasPattern = !!freq;
+
+  if (!hasPattern && upcoming.length === 0 && mine.length === 0) {
+    slotsHtml = `<div style="font-size:15px;color:var(--gray-500);padding:16px 0;line-height:1.5">
+      No slots yet. Head to the calendar to add prayer times.</div>`;
+  } else if (!hasPattern) {
+    // no pattern — show all individual slots
+    const shown = upcoming.slice(0, SHOW);
+    const rows = shown.map(s => {
+      const p = parseKey(s.slotKey), date = new Date(p.year, p.month, p.day);
+      return `<div class="ms-slot-row">
+        <div>
+          <div class="ms-slot-date">${fmtDate(date)}</div>
+          <div class="ms-slot-time">${fmtTime(p.hour,p.min)} – ${fmtTime(p.hour,p.min+15)}</div>
+        </div>
+        <button class="ms-remove-btn" onclick="removeSlotFromDb(\'${s.slotKey}\')">Remove</button>
+      </div>`;
+    }).join('');
+    const more = upcoming.length > SHOW
+      ? `<button class="ms-show-more" onclick="setPage('calendar')">+ ${upcoming.length - SHOW} more on the calendar →</button>`
+      : '';
+    slotsHtml = `
+      <div class="ms-section-label">Upcoming</div>
+      ${rows}${more}`;
+  } else {
+    // has pattern — show the next few upcoming for reference
+    const shown = upcoming.slice(0, SHOW);
+    if (shown.length > 0) {
+      const rows = shown.map(s => {
+        const p = parseKey(s.slotKey), date = new Date(p.year, p.month, p.day);
+        return `<div class="ms-slot-row">
+          <div>
+            <div class="ms-slot-date">${fmtDate(date)}</div>
+            <div class="ms-slot-time">${fmtTime(p.hour,p.min)}</div>
+          </div>
+          <button class="ms-remove-btn" onclick="removeSlotFromDb(\'${s.slotKey}\')">Remove</button>
+        </div>`;
+      }).join('');
+      const more = upcoming.length > SHOW
+        ? `<button class="ms-show-more" onclick="setPage('calendar')">+ ${upcoming.length - SHOW} more on the calendar →</button>`
+        : '';
+      slotsHtml = `
+        <div class="ms-section-label">Upcoming prayer times</div>
+        ${rows}${more}`;
+    }
+  }
 
   return `
     <div class="page-content">
-      <h2>${S.userName}'s Prayer Slots</h2>
-      <p class="page-subtitle">${mine.length} scheduled</p>
-      ${rows}
+      <div class="ms-wrap" style="padding:0">
+        <h2 class="ms-greeting">Hi, <em>${S.userName}</em>.</h2>
+        ${cardHtml}
+        ${slotsHtml}
+      </div>
     </div>`;
+}
+
+// ── CHANGE TIME ───────────────────────────────────────────────────────
+function openChangeTime() {
+  const profile = S.profile;
+  const h = profile?.preferredHour ?? 7;
+  const m = profile?.preferredMin  ?? 0;
+  const initHour = OB.hour ?? h;
+  const initMin  = OB.min  ?? m;
+
+  document.getElementById('m-eyebrow').textContent = 'Update prayer time';
+  document.getElementById('m-title').textContent   = 'Change your time';
+  document.getElementById('m-sub').textContent     = 'Drag to pick a new time. This will update all your upcoming slots.';
+
+  document.getElementById('m-body').innerHTML = `
+    <div class="ct-label">New time</div>
+    <div class="ts-wrap" style="margin-bottom:0">
+      <div class="ts-selected-time" id="ts-label" style="font-size:36px">${fmtTime(initHour, initMin)}</div>
+      <div class="ts-container" id="ts-container"
+           onmousedown="tsDown(event)" ontouchstart="tsDown(event)"
+           onmousemove="tsMove(event)" ontouchmove="tsMove(event)"
+           onmouseup="tsUp()"         ontouchend="tsUp()"
+           onmouseleave="tsUp()">
+        <div class="ts-track" id="ts-track"></div>
+        <div class="ts-window"><div class="ts-center-line"></div></div>
+      </div>
+    </div>`;
+
+  document.getElementById('m-actions').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNewTime()">Save time</button>`;
+
+  document.getElementById('backdrop').classList.add('open');
+  setTimeout(() => tsInit(initHour, initMin), 40);
+}
+
+async function saveNewTime() {
+  if (!S.currentUser || !S.profile) return;
+  const newHour = OB.hour ?? 7;
+  const newMin  = OB.min  ?? 0;
+
+  closeModal();
+
+  // Update profile
+  const uid = S.currentUser.uid;
+  S.profile.preferredHour = newHour;
+  S.profile.preferredMin  = newMin;
+  await saveProfile(uid, { ...S.profile });
+
+  // Delete future slots and recreate with new time
+  const now = new Date();
+  const futureSlotIds = S.slots
+    .filter(s => {
+      if (s.userId !== uid) return false;
+      const p = parseKey(s.slotKey);
+      return new Date(p.year, p.month, p.day, p.hour, p.min) > now;
+    })
+    .map(s => s.id);
+
+  const batch1 = writeBatch(db);
+  futureSlotIds.forEach(id => batch1.delete(doc(db, 'prayer_slots', id)));
+  await batch1.commit();
+
+  // Recreate with new time using existing frequency/days
+  const keys = generateSlotKeys({
+    frequency:    S.profile.frequency,
+    days:         S.profile.preferredDays  ?? [],
+    hour:         newHour,
+    min:          newMin,
+  });
+  const batch2 = writeBatch(db);
+  keys.forEach(k => batch2.set(doc(collection(db, 'prayer_slots')), {
+    userId: uid, userName: S.userName,
+    slotKey: k, createdAt: serverTimestamp(),
+  }));
+  await batch2.commit();
 }
 
 function renderAdmin() {
@@ -2780,6 +3035,7 @@ Object.assign(window, {
   openSlot, closeModal, doSignUp, removeSlotFromDb,
   toggleUserMenu, doSignOut, checkAdmin,
   closeMobileSheet, renderMobileSheet,
+  openChangeTime, saveNewTime,
   S, OB,
 });
 
